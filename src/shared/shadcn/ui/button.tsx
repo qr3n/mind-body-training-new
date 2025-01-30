@@ -2,8 +2,8 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/shared/shadcn/lib/utils"
-import './button-ripple.css'
 import useRipple from "use-ripple-hook";
+import { Loader2 } from "lucide-react";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 active:scale-95 whitespace-nowrap rounded-full text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
@@ -36,22 +36,31 @@ const buttonVariants = cva(
 )
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
-  asChild?: boolean
+    extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+        VariantProps<typeof buttonVariants> {
+    asChild?: boolean,
+    isLoading?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
-      const [ripple, event] = useRipple();
+      const [ripple, event] = useRipple({
+          color: variant === 'ghost' ? 'rgba(118,170,255,0.24)' : "rgba(255, 255, 255, .3)"
+      });
+
+      props.children = props.isLoading ? <>{props.children} <Loader2 className="text-white h-4 ml-2 w-4 animate-spin" /></> : props.children
+      props.disabled = props.isLoading || props.disabled
+
+      const newProps = props
+      delete newProps.isLoading
 
       return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ripple || ref}
         onMouseDown={event}
-        {...props}
+        {...newProps}
       />
     )
   }

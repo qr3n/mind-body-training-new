@@ -1,7 +1,7 @@
 import { RenderBlocks } from "./RenderBlocks";
-import { AddFirstLevelBlocks } from "./AddFirstLevelBlocks"
+import { Header } from './Header'
 
 export const CreateTraining = {
     RenderBlocks,
-    AddFirstLevelBlocks,
+    Header
 }

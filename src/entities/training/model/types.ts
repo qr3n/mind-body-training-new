@@ -1,4 +1,4 @@
-export type IBlockType =
+export type TBlockType =
     'greeting'
     | 'ascet'
     | 'circle'
@@ -13,73 +13,85 @@ export type IBlockType =
     | 'secondLevelCircle'
 
 export interface ITrainingAudio {
+    type: 'audio'
     id: string,
+    blob?: string,
+}
+
+export interface ITrainingPause {
+    type: 'pause'
+    id: string
+    duration: number
 }
 
 export interface ITrainingVideo {
-    id: string
+    id: string,
 }
 
-export interface ITrainingTestQuestion {
-    label: string,
-    checked: boolean
-}
+// export interface ITrainingTestQuestion {
+//     label: string,
+//     checked: boolean
+// }
 
-export interface ITrainingBlockTemplate<D extends IBlockType> {
+export interface ITrainingBlockTemplate<D extends TBlockType> {
     parentId?: string,
     type: D,
 }
 
 
-export interface IGreetings extends ITrainingBlockTemplate<'greeting'> {
-    title: string,
-    subtitle: string,
-    imageURL: string,
-}
+export type IGreetings = ITrainingBlockTemplate<'greeting'>
 
+export type IAscet = ITrainingBlockTemplate<'ascet'>
 
-export interface IAscet extends ITrainingBlockTemplate<'ascet'> {
-    audios: ITrainingAudio[]
-}
+export type ICircle = ITrainingBlockTemplate<'circle'>
 
-export interface ICircle extends ITrainingBlockTemplate<'circle'> {
-    audios: ITrainingAudio[]
-}
+export type ISplit = ITrainingBlockTemplate<'split'>
 
-export interface ISplit extends ITrainingBlockTemplate<'split'> {
-    audios: ITrainingAudio[]
-}
+export type IWarmup = ITrainingBlockTemplate<'warmup'>
 
-export interface IWarmup extends ITrainingBlockTemplate<'warmup'> {
-    audios: ITrainingAudio[]
-}
+export type IStretch = ITrainingBlockTemplate<'stretch'>
 
-export interface IStretch extends ITrainingBlockTemplate<'stretch'> {
-    audios: ITrainingAudio[]
-}
+export type ITesting = ITrainingBlockTemplate<'testing'>
 
-export interface ITesting extends ITrainingBlockTemplate<'testing'> {
-    questions: ITrainingTestQuestion[]
-}
-
-export interface IDone extends ITrainingBlockTemplate<'done'> {
-    audios: ITrainingAudio[]
-}
+export type IDone = ITrainingBlockTemplate<'done'>
 
 export type ISecondLevelCircle = ITrainingBlockTemplate<'secondLevelCircle'>
 
-export interface IRest extends ITrainingBlockTemplate<'rest'> {
-    audios: ITrainingAudio[],
-    videos: ITrainingVideo[]
-}
+export type IRest = ITrainingBlockTemplate<'rest'>
 
-export interface IExercise extends ITrainingBlockTemplate<'exercise'> {
-    audios: ITrainingAudio[],
-    videos: ITrainingVideo[],
-}
+export type IExercise = ITrainingBlockTemplate<'exercise'>
 
-export interface IPhrase extends ITrainingBlockTemplate<'phrase'> {
-    audios: ITrainingAudio[],
-}
+export type IPhrase = ITrainingBlockTemplate<'phrase'>
 
 export type TTrainingBlock = IGreetings | IAscet | ICircle | ISplit | IWarmup | IStretch | ITesting | IDone | ISecondLevelCircle | IRest | IExercise | IPhrase
+
+export interface IQuestion {
+    question: string;
+    answer: boolean; // true для "Правда", false для "Ложь"
+}
+
+export interface ITrainingBlockWithContent {
+    type: TBlockType
+    content?: ITrainingBlockWithContent[],
+    title?: string,
+    description?: string,
+    imageName?: string,
+    videos: ITrainingVideo[]
+    audios: ITrainingAudio[]
+    questions?: IQuestion[];
+    ending?: ITrainingAudio[],
+    startIn?: number,
+    slideDuration?: number,
+}
+
+export interface ITraining {
+    id: string,
+    title: string,
+    equipment: string[],
+    music_volume: number,
+    speaker_volume: number,
+    cycle: boolean,
+    gender: 'male' | 'female',
+    audio: ITrainingAudio[]
+    blocks: ITrainingBlockWithContent[]
+}

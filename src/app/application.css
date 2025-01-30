@@ -1,0 +1,130 @@
+/*@import url('https://fonts.cdnfonts.com/css/gilroy-bold');*/
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+    -webkit-text-fill-color: #ffffff !important;
+    border: 1px solid #ffffff !important;
+    outline: none !important;
+    border-radius: 12px !important;
+}
+
+::-webkit-scrollbar {
+    width: 5px;
+    border-radius: 18px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f3f3f3;
+    border-radius: 18px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #e1e1e1;
+    border-radius: 18px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #dfdfdf;
+}
+
+* {
+    user-select: none !important;
+    font-family: "Inter", sans-serif !important;
+    font-optical-sizing: auto;
+    font-style: normal;
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-2rem);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.menu {
+    animation: fadeIn 0.1s backwards;
+}
+
+.block-collapse-enter {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+.block-collapse-enter-active {
+    max-height: 200px; /* Укажите максимальную высоту содержимого */
+    opacity: 1;
+}
+
+.block-collapse-exit {
+    max-height: 200px;
+    opacity: 1;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+.block-collapse-exit-active {
+    max-height: 0;
+    opacity: 0;
+}
+
+.hidden-checkbox {
+    display: none;
+}
+
+.label-checkbox {
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding-left: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.label-checkbox:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid #007bff;
+    border-radius: 5px;
+    background-color: white;
+    transition: all 0.3s ease;
+}
+
+.hidden-checkbox:checked + .label-checkbox:before {
+    background-color: #007bff;
+    border-color: #007bff;
+    transform: translateY(-50%) scale(1.2);
+}
+
+.hidden-checkbox:checked + .label-checkbox:after {
+    content: '✓';
+    position: absolute;
+    left: 4px;  /* Сдвигаем галочку влево */
+    top: 50%;
+    transform: translateY(-50%) rotate(0deg);  /* Убираем наклон */
+    color: white;
+    font-size: 18px;  /* Размер галочки */
+    font-weight: bold;  /* Толщина галочки */
+    transition: opacity 0.3s ease;
+}
+
+.hidden-checkbox:not(:checked) + .label-checkbox:after {
+    opacity: 0;
+}
+
+.label-checkbox:hover:before {
+    border-color: #0056b3;
+}
