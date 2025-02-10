@@ -26,6 +26,8 @@ export interface ITrainingPause {
 
 export interface ITrainingVideo {
     id: string,
+    type?: string,
+    checksum?: string,
 }
 
 // export interface ITrainingTestQuestion {
@@ -65,20 +67,22 @@ export type IPhrase = ITrainingBlockTemplate<'phrase'>
 
 export type TTrainingBlock = IGreetings | IAscet | ICircle | ISplit | IWarmup | IStretch | ITesting | IDone | ISecondLevelCircle | IRest | IExercise | IPhrase
 
-export interface IQuestion {
-    question: string;
-    answer: boolean; // true для "Правда", false для "Ложь"
+export interface IAnswer {
+    text: string;
+    isCorrect: boolean;
 }
 
 export interface ITrainingBlockWithContent {
+    id?: string
     type: TBlockType
     content?: ITrainingBlockWithContent[],
     title?: string,
     description?: string,
     imageName?: string,
     videos: ITrainingVideo[]
-    audios: ITrainingAudio[]
-    questions?: IQuestion[];
+    audios: ITrainingAudio[],
+    question?: string,
+    answers?: IAnswer[];
     ending?: ITrainingAudio[],
     startIn?: number,
     slideDuration?: number,

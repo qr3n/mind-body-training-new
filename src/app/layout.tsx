@@ -3,6 +3,7 @@ import "./globals.css";
 import "./application.css";
 import { Providers } from "@/app/providers";
 import { Toaster } from "react-hot-toast";
+import NextTopLoader from 'nextjs-toploader';
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -19,6 +20,8 @@ export default function RootLayout({
     <Providers>
       <body>
       {children}
+      <NextTopLoader color="#4E79FFFF" template='<div class="bar" role="bar"><div class="peg"></div></divz'
+                     showSpinner={false}/>
       <Toaster toastOptions={{ style: { borderRadius: '1000px' } }}/>
       </body>
     </Providers>

@@ -31,7 +31,7 @@ export const AddBlocks = (props: {
     }, [addBlock, props])
 
     return (
-        <div className='flex gap-2 flex-wrap'>
+        <div className='flex gap-2 flex-wrap sticky top-0 bg'>
             {props.blocksTypes.map(t =>
                 <Button
                     variant='ghost'

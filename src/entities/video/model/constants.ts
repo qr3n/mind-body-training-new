@@ -23,4 +23,3 @@ export const videoMuscles = [
     { value: 'ЗППР', label: 'ЗППР' },
     { value: 'ТРАП', label: 'ТРАП' },
 ]
-

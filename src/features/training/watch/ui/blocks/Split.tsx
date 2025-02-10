@@ -2,6 +2,7 @@ import { IWatchTrainingBlockProps } from "@/features/training/watch/ui/blocks/ty
 import { WatchTrainingTemplate } from "@/features/training/watch/ui/templates";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCurrentBlockStep }      from "@/features/training/watch/model/useCurrentBlockStep";
+import { Phrase } from "@/features/training/watch/ui/blocks/Phrase";
 
 
 export const Split = (props: IWatchTrainingBlockProps) => {
@@ -10,6 +11,7 @@ export const Split = (props: IWatchTrainingBlockProps) => {
 
     const staticBlock = [
         <WatchTrainingTemplate.BlockText
+            handlePrev={handlePrev}
             icon={<svg xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" width="526"
                        height="75" viewBox="0 0 826 275" fill="none">
                 <rect width="826" height="275" fill="url(#pattern0_11_4)"/>
@@ -36,11 +38,18 @@ export const Split = (props: IWatchTrainingBlockProps) => {
 
     ];
 
-    const dynamicBlocks = props.block.content?.map((content, i) => (
-        <WatchTrainingTemplate.BlockVideos
-            restType={(content.type === 'rest') ? (i < 2 ? 'first' : 'second') : undefined} handlePrev={handlePrev}
-            renderExerciseNumber handleNext={handleNext} key={i + 1} block={content} type={content.type}/>
-    ));
+    const dynamicBlocks = props.block.content?.map((content, i) => {
+        return content.type === 'phrase' ? <Phrase prevStep={handlePrev} block={content} onComplete={handleNext} step={props.step}/> : (
+            <WatchTrainingTemplate.BlockVideos
+                restType={(content.type === 'rest') ? (i < 2 ? 'first' : 'second') : undefined}
+                handlePrev={handlePrev}
+                renderExerciseNumber
+                handleNext={handleNext}
+                key={i + 1}
+                block={content}
+                type={content.type}/>
+        );
+    }).flat();
 
 
     const blocks = [staticBlock, ...(dynamicBlocks || [])];

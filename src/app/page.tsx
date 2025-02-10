@@ -20,13 +20,13 @@ const blocksTypes: TBlockType[] = [
 
 export default function Home() {
   return (
-      <>
+      <div className='editor'>
           <CreateTraining.Header/>
 
           <div className='w-full p-3 flex justify-between z-50 sticky items-center top-[80px] bg-[#f7f6f8] mb-4'>
               <CreateTrainingTemplates.AddBlocks isTransparent blocksTypes={blocksTypes}/>
           </div>
           <CreateTraining.RenderBlocks/>
-      </>
+      </div>
   );
 }

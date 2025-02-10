@@ -9,8 +9,10 @@ import { API_URL }                                                   from "@/sha
 import { IndexedDBService } from "@/shared/indexed-db";
 import { ITraining, ITrainingAudio, ITrainingBlockWithContent, ITrainingVideo } from "@/entities/training";
 import { Edit }                                                      from "lucide-react";
+import { useVideos } from "@/entities/video";
 
 export const DownloadTrainingMedia = (props: { training: ITraining }) => {
+    const { data } = useVideos()
     const { training } = props;
     const [isLoading, setIsLoading] = useState(false);
     const [allFilesDownloaded, setAllFilesDownloaded] = useState(false);
@@ -29,16 +31,27 @@ export const DownloadTrainingMedia = (props: { training: ITraining }) => {
         });
     };
 
-    // Проверка существования файла в IndexedDB
-    const isFileExists = async (storeName: string, id: string): Promise<boolean> => {
+    const isFileExists = async (storeName: string, id: string, checksum?: string): Promise<boolean> => {
         const db = await initDB();
         const tx = db.transaction(storeName, "readonly");
         const store = tx.objectStore(storeName);
-        const file = await store.get(id);
-        await tx.done;
-        return !!file;
-    };
 
+        console.log('EXISTS IF')
+
+        try {
+            const file = await store.get(id);
+            await tx.done;
+
+            console.log(file)
+            console.log(checksum)
+
+            return !!(file && (checksum ? file.checksum === checksum : true));
+
+        } catch {
+            return false;
+        }
+
+    };
     // Скачивание файла по URL
     const downloadFile = async (url: string) => {
         const response = await fetch(url);
@@ -79,14 +92,16 @@ export const DownloadTrainingMedia = (props: { training: ITraining }) => {
         const indexedDBService = await IndexedDBService.initialize();
 
         try {
+            // Скачивание видео с проверкой чексуммы
             for (const video of videos) {
-                const alreadyExists = await isFileExists("videos", video.id);
+                const alreadyExists = await isFileExists("videos", video.id, data?.find(v => v.id === video.id)?.checksum);
                 if (!alreadyExists) {
-                    const videoBlob = await downloadFile(`${API_URL}/content/stream/video/${video.id}`);
-                    await indexedDBService.save_video({ id: video.id, blob: videoBlob });
+                    const videoBlob = await downloadFile(`${API_URL}/content/stream/video/${video.id}?v=${video.checksum}`);
+                    await indexedDBService.save_video({ id: video.id, blob: videoBlob, checksum: data?.find(v => v.id === video.id)?.checksum });
                 }
             }
 
+            // Скачивание аудио без проверки чексуммы
             for (const audio of audios) {
                 const alreadyExists = await isFileExists("sounds", audio.id);
                 if (!alreadyExists) {
@@ -104,32 +119,32 @@ export const DownloadTrainingMedia = (props: { training: ITraining }) => {
             setIsLoading(false);
         }
     };
-
-    // Проверка, все ли файлы уже загружены
     useEffect(() => {
-        const checkAllFilesDownloaded = async () => {
-            const { videos, audios } = extractMedia(training);
+        if (data) {
+            const checkAllFilesDownloaded = async () => {
+                const { videos, audios } = extractMedia(training);
 
-            for (const video of videos) {
-                const videoExists = await isFileExists("videos", video.id);
-                if (!videoExists) return false;
-            }
+                for (const video of videos) {
+                    const videoExists = await isFileExists("videos", video.id, data.find(v => v.id === video.id)?.checksum);
+                    if (!videoExists) return false;
+                }
 
-            for (const audio of audios) {
-                const audioExists = await isFileExists("sounds", audio.id);
-                if (!audioExists) return false;
-            }
+                for (const audio of audios) {
+                    const audioExists = await isFileExists("sounds", audio.id);
+                    if (!audioExists) return false;
+                }
 
-            return true;
-        };
+                return true;
+            };
 
-        const checkFiles = async () => {
-            const allDownloaded = await checkAllFilesDownloaded();
-            setAllFilesDownloaded(allDownloaded);
-        };
+            const checkFiles = async () => {
+                const allDownloaded = await checkAllFilesDownloaded();
+                setAllFilesDownloaded(allDownloaded);
+            };
 
-        checkFiles();
-    }, [training]);
+            checkFiles();
+        }
+    }, [training, data]);
 
     return (
         <div>

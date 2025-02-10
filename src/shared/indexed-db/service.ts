@@ -25,11 +25,12 @@ export class IndexedDBService {
     private async save(storeName: string, data: { id: string; blob: Blob }) {
         const tx = this.db.transaction(storeName, "readwrite");
         const store = tx.objectStore(storeName);
+        await store.delete(data.id)
         await store.put(data);
         await tx.done;
     }
 
-    async save_video(data: { id: string; blob: Blob }) {
+    async save_video(data: { id: string; checksum?: string, blob: Blob }) {
         return this.save("videos", data);
     }
 

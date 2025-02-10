@@ -28,11 +28,11 @@ const RenderVideosContent = (props: { id: string, isPlaying: boolean, onVideoEnd
                         width={200}
                         src={
                             data?.find(a => a.id === video.id)?.videoBlob ||
-                            `${API_URL}/content/stream/video/${video.id}`
+                            `${API_URL}/content/stream/video/${video.id}?v=${Date.now().toString()}`
                         }
                         preview={
                             data?.find(a => a.id === video.id)?.previewBlob ||
-                            `${API_URL}/content/library/video/preview/${video.id}`
+                            `${API_URL}/content/library/video/preview/${video.id}?v=${Date.now().toString()}`
                         }
                         isPlaying={props.isPlaying && i === 0}
                         onVideoEnd={props.onVideoEnd}

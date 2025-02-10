@@ -7,9 +7,18 @@ import { IWatchTrainingBlockProps } from "@/features/training/watch/ui/blocks/ty
 import Image from "next/image";
 import { speakerImg } from "@/features/training/watch/ui/assets";
 import { WatchTrainingTemplate } from "@/features/training/watch/ui/templates";
+import { watchTrainingMusicPlaying } from "@/features/training/watch/model";
+import { useSetAtom } from "jotai";
+import { useEffect } from "react";
 
 
 export const Phrase = (props: IWatchTrainingBlockProps) => {
+    const setIsMusicPlaying = useSetAtom(watchTrainingMusicPlaying)
+
+    useEffect(() => {
+        setIsMusicPlaying(false)
+    }, []);
+
     return (
         <div className='relative w-[100dvw] h-[100dvh] flex items-center justify-center'>
             <WatchTrainingTemplate.BlockSounds isPlaying block={props.block}/>
@@ -24,7 +33,7 @@ export const Phrase = (props: IWatchTrainingBlockProps) => {
                     initial={{transform: 'translateY(-100dvh)'}}
                     animate={{transform: 'translateY(0)'}}
                     exit={{transform: 'translateY(-100dvh)'}}
-                    className='flex flex-col items-center justify-center -mt-12'>
+                    className='flex flex-col items-center justify-center -mt-[12dvh]'>
                     <motion.h1
                         initial={{scale: 0}}
                         animate={{scale: 1}}
@@ -36,7 +45,7 @@ export const Phrase = (props: IWatchTrainingBlockProps) => {
                         initial={{scale: 0}}
                         animate={{scale: 1}}
                         exit={{scale: 0, transition: {delay: 0.1}}}
-                        className='text-sm text-white mt-2 font-light'
+                        className='text-sm mx-4 text-center text-white mt-2 font-light'
                     >
                         Она будет в тесте, который поможет вам набрать баллы
                     </motion.p>
@@ -62,13 +71,13 @@ export const Phrase = (props: IWatchTrainingBlockProps) => {
                 '
             >
                 <div
-                    className='border-4 rounded-full border-blue-500 w-[270px] h-[270px] cursor-pointer flex items-center justify-center'>
+                    className='border-4 rounded-full border-blue-500 w-[270px] h-[270px] max-w-[30vh] max-h-[30vh] cursor-pointer flex items-center justify-center'>
                     <motion.div
                         initial={{scale: 0}}
                         animate={{scale: 1}}
                         exit={{scale: 0, transition: {delay: 0.1}}}
-                        className='absolute -mt-[100px] -mr-12'>
-                        <Image src={speakerImg} alt={'speaker'} width={'350'} height={'350'}
+                        className='absolute object-contain -mt-[15dvh] -mr-[6dvh] max-w-[40vh] max-h-[40vh]'>
+                        <Image src={speakerImg} alt={'speaker'} width={'2000'} height={'2000'}
                                />
                     </motion.div>
                 </div>
@@ -81,11 +90,17 @@ export const Phrase = (props: IWatchTrainingBlockProps) => {
                     exit={{transform: 'translateY(200px)', transition: {delay: 0.2}}}
                     transition={{delay: 0.2}}
                 >
-                    <Button className='py-6' >
+                    <Button onClick={() => {
+                        if (props.prevStep) props.prevStep()
+                        setIsMusicPlaying(true)
+                    }} className='py-6' >
                         <IoArrowBack className='text-white'/>
                     </Button>
-                    <Button className='w-full sm:w-[400px] py-6' onClick={props.onComplete}>
-                        ДАЛЕЕ
+                    <Button className='w-full sm:w-[400px] py-6' onClick={() => {
+                        props.onComplete()
+                        setIsMusicPlaying(true)
+                    }}>
+                        ФРАЗА ЗАПОМНЕНА
                     </Button>
                 </motion.div>
             </div>

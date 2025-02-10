@@ -5,7 +5,7 @@ interface CanvasVideoPlayerProps {
     preview?: string;
     isPlaying?: boolean;
     onVideoEnd?: () => void;
-    onTimeUpdate?: (currentTime: number) => void; // Добавим этот пропс для onTimeUpdate
+    onTimeUpdate?: (currentTime: number) => void;
     width: number;
 }
 
@@ -16,6 +16,7 @@ export const CanvasVideoPlayer: React.FC<CanvasVideoPlayerProps> = memo(
         const animationFrameIdRef = useRef<number | null>(null);
 
         const [imageLoaded, setImageLoaded] = useState(false);
+        const [videoLoaded, setVideoLoaded] = useState(false);
         const previewImageRef = useRef<HTMLImageElement | null>(null);
 
         useEffect(() => {
@@ -35,15 +36,27 @@ export const CanvasVideoPlayer: React.FC<CanvasVideoPlayerProps> = memo(
 
             if (!video || !canvas) return;
 
+            video.onloadedmetadata = () => {
+                setVideoLoaded(true);
+                const ctx = canvas.getContext("2d");
+                if (ctx) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    video.currentTime = 0;
+                }
+            };
+        }, [src]);
+
+        useEffect(() => {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+
+            if (!video || !canvas || !videoLoaded) return;
+
             if (onVideoEnd) video.onended = onVideoEnd;
 
             const ctx = canvas.getContext("2d");
             if (!ctx) return;
-
-            if (video.videoWidth && video.videoHeight) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-            }
 
             const drawFrame = () => {
                 if (!video.paused && !video.ended) {
@@ -52,17 +65,16 @@ export const CanvasVideoPlayer: React.FC<CanvasVideoPlayerProps> = memo(
                 }
             };
 
-            // Добавляем обработчик timeupdate, который будет вызываться каждый раз, когда текущее время видео обновляется
             const handleTimeUpdate = () => {
                 if (onTimeUpdate && video) {
-                    onTimeUpdate(video.currentTime); // Передаем текущее время в родительский компонент
+                    onTimeUpdate(video.currentTime);
                 }
             };
 
             if (isPlaying) {
                 video.play().catch(console.error);
                 animationFrameIdRef.current = requestAnimationFrame(drawFrame);
-                video.addEventListener("timeupdate", handleTimeUpdate); // Подписываемся на timeupdate
+                video.addEventListener("timeupdate", handleTimeUpdate);
             } else {
                 video.pause();
                 if (animationFrameIdRef.current) {
@@ -74,8 +86,10 @@ export const CanvasVideoPlayer: React.FC<CanvasVideoPlayerProps> = memo(
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(previewImageRef.current, 0, 0, canvas.width, canvas.height);
                 } else {
-                    // Когда превью не задано, рисуем последний кадр видео
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    video.currentTime = 0;
+                    video.onseeked = () => {
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    };
                 }
             }
 
@@ -83,9 +97,9 @@ export const CanvasVideoPlayer: React.FC<CanvasVideoPlayerProps> = memo(
                 if (animationFrameIdRef.current) {
                     cancelAnimationFrame(animationFrameIdRef.current);
                 }
-                video.removeEventListener("timeupdate", handleTimeUpdate); // Убираем слушатель при размонтировании
+                video.removeEventListener("timeupdate", handleTimeUpdate);
             };
-        }, [isPlaying, imageLoaded, onVideoEnd, onTimeUpdate]);
+        }, [isPlaying, imageLoaded, videoLoaded, onVideoEnd, onTimeUpdate]);
 
         return (
             <div className="bg-gray-100 relative sm:rounded-2xl aspect-video max-w-[1200px]">

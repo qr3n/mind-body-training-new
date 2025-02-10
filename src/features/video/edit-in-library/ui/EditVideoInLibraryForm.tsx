@@ -21,17 +21,24 @@ import Select, { components }                                             from "
 import { AnimatedCheckbox }                                               from "@/shared/ui/animated-checkbox";
 import { Input }                                                          from "@/shared/shadcn/ui/input";
 import { Button }                                                         from "@/shared/shadcn/ui/button";
-import { useMemo }                                                        from "react";
+import React, { useMemo, useRef, useState } from "react";
 import Image                                                              from "next/image";
 import { API_URL }                                                        from "@/shared/api";
 import { videoService }                             from "@/shared/api/services/video";
 import { useAtomValue, useSetAtom }                 from "jotai/index";
 import { allTrainingVideosAtom, trainingEquipment } from "@/features/training/create/model";
+import { FaPause } from "react-icons/fa6";
+import { FaPlay } from "react-icons/fa";
+import { Slider } from "@/shared/shadcn/ui/slider";
 
 export const EditVideoInLibraryForm = (props: { id: string, setOpen: (open: boolean) => void }) => {
     const setEquipment = useSetAtom(trainingEquipment)
     const { data } = useVideos()
     const video = useMemo(() => data?.find(v => v.id === props.id), [data, props.id])
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [progress, setProgress] = useState(0);
+
     const allVideos = useAtomValue(allTrainingVideosAtom)
     const { mutate } = useMutation({
         mutationFn: videoService.editVideoInLibrary,
@@ -95,6 +102,26 @@ export const EditVideoInLibraryForm = (props: { id: string, setOpen: (open: bool
         });
     }
 
+    const handlePlayPause = () => {
+        if (videoRef.current) {
+            if (isPlaying) {
+                videoRef.current.pause();
+            } else {
+                videoRef.current.play();
+            }
+            setIsPlaying(!isPlaying);
+        }
+    };
+
+    const handleSeek = (value: number) => {
+        if (videoRef.current) {
+            videoRef.current.currentTime = (value / 100) * videoRef.current.duration;
+            setProgress(value);
+        }
+    };
+
+    const src = useMemo(() => `${API_URL}/content/stream/video/${props.id}?v=${Date.now().toString()}`, [])
+
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-4">
@@ -107,20 +134,38 @@ export const EditVideoInLibraryForm = (props: { id: string, setOpen: (open: bool
                             <FormItem className='w-full p-2'>
                                 <FormLabel>Видео</FormLabel>
                                 <FormControl>
-                                    <FileUploader type='video' fieldProps={fieldProps} onChange={onChange}>
-                                        {value ? <MediaRender file={value} type="video" /> : <Image
-                                            src={video?.previewBlob || `${API_URL}/content/library/video/preview/${props.id}`}
-                                            width={400}
-                                            height={300}
-                                            className='w-full aspect-video rounded-2xl'
-                                            alt={'preview'} />
+                                    <div>
+                                        <FileUploader type='video' fieldProps={fieldProps} onChange={onChange}>
+                                            {value ?
+                                                <MediaRender file={value} type="video" videoRef={videoRef} /> :
+                                                <MediaRender
+                                                    src={src}
+                                                    type="video"
+                                                    videoRef={videoRef}
+                                                />
                                             }
-                                    </FileUploader>
+                                        </FileUploader>
+
+                                        <div className="flex gap-2 justify-center mt-2">
+                                            <Button type='button' className='w-8 h-8' onClick={handlePlayPause}>
+                                                {isPlaying ? <FaPause className='w-3 h-3'/> : <FaPlay className='w-3 h-3'/>}
+                                            </Button>
+
+                                            <Slider
+                                                value={[progress]}
+                                                onValueChange={(value) => handleSeek(value[0])}
+                                                max={100}
+                                                step={0.1}
+                                                className="w-full"
+                                            />
+                                        </div>
+                                    </div>
                                 </FormControl>
-                                <FormMessage />
+                                <FormMessage/>
                             </FormItem>
                         )}
                     />
+
 
                     <FormField
                         control={form.control}

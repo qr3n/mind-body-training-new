@@ -5,54 +5,33 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 
 type MediaProps = {
-    file: File;
+    file?: File;
+    src?: string;
     type: "image" | "video" | "audio";
     videoProps?: React.VideoHTMLAttributes<HTMLVideoElement>;
     videoRef?: React.RefObject<HTMLVideoElement>;
 };
 
-export const MediaRender = ({ file, type, videoProps, videoRef }: MediaProps) => {
+export const MediaRender = ({ file, src, type, videoProps, videoRef }: MediaProps) => {
     const localVideoRef = useRef<HTMLVideoElement | null>(null);
-    const [element, setElement] = useState<ReactElement | null>(null);
+    const [url, setUrl] = useState<string | null>(null);
 
+    // Создаем URL для File, если он есть
     useEffect(() => {
         if (file) {
-            const url = URL.createObjectURL(file);
-
-            switch (type) {
-                case "audio":
-                    setElement(<audio src={url} controls />);
-                    break;
-
-                case "image":
-                    setElement(
-                        <Image
-                            src={url}
-                            alt="media"
-                            width={'0'}
-                            height={'0'}
-                            className="w-full h-full object-cover rounded-2xl will-change-transform"
-                        />
-                    );
-                    break;
-
-                case "video":
-                    setElement(
-                        <video
-                            ref={videoRef || localVideoRef}
-                            src={url}
-                            className="will-change-transform w-full h-full rounded-2xl"
-                            {...videoProps}
-                        />
-                    );
-                    break;
-            }
-
-            return () => {
-                URL.revokeObjectURL(url);
-            };
+            const objectUrl = URL.createObjectURL(file);
+            setUrl(objectUrl);
+            return () => URL.revokeObjectURL(objectUrl);
+        } else if (src) {
+            setUrl(src);
         }
-    }, [file, type, videoProps, videoRef]);
+    }, [file, src]);
+
+    useEffect(() => {
+        if (videoRef?.current && localVideoRef.current) {
+            // videoRef.current = localVideoRef.current;
+        }
+    }, [url, videoRef]);
 
     return (
         <motion.div
@@ -63,7 +42,24 @@ export const MediaRender = ({ file, type, videoProps, videoRef }: MediaProps) =>
                 type !== "audio" ? "aspect-video" : ""
             }`}
         >
-            {element}
+            {type === "audio" && url && <audio src={url} controls />}
+            {type === "image" && url && (
+                <Image
+                    src={url}
+                    alt="media"
+                    width={'0'}
+                    height={'0'}
+                    className="w-full h-full object-cover rounded-2xl will-change-transform"
+                />
+            )}
+            {type === "video" && url && (
+                <video
+                    ref={videoRef || localVideoRef}
+                    src={url}
+                    className="will-change-transform w-full h-full rounded-2xl"
+                    {...videoProps}
+                />
+            )}
         </motion.div>
     );
 };

@@ -13,7 +13,7 @@ import {
 } from "@/shared/shadcn/ui/select";
 import { useAtom } from "jotai/index";
 import {
-    assembleTrainingBlocksAtom, blockSoundsAtomFamily,
+    assembleTrainingBlocksAtom, blockSoundsAtomFamily, cycleTrainingMusic,
     isSomethingUploadingAtom,
     trainingEquipment
 } from "@/features/training/create/model";
@@ -24,10 +24,11 @@ import { useMutation }             from "@tanstack/react-query";
 import { trainingService }                        from "@/shared/api/services/training/trainingService";
 import { BlockSounds } from "@/features/training/create/ui/templates/BlockSounds";
 import { AnimatedCheckbox } from "@/shared/ui/animated-checkbox";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useAtomValue } from "jotai";
+import Link from "next/link";
 
 const FormSchema = z.object({
     title: z.string(),
@@ -59,10 +60,18 @@ const Equipment = () => {
     )
 }
 
+interface IProps {
+    edit?: boolean,
+    id?: string,
+    title?: string,
+    description?: string,
+    initialMusicVolume?: number,
+    initialSpeakerVolume?: number
+}
 
-export const Header = (props: { edit?: boolean, id?: string, title?: string, description?: string }) => {
+export const Header = (props: IProps) => {
     const router = useRouter()
-    const [cycle, setCycle] = useState(false)
+    const [cycle, setCycle] = useAtom(cycleTrainingMusic)
     const isFetching = useAtomValue(isSomethingUploadingAtom);
     const audios = useAtomValue(blockSoundsAtomFamily('root.audios'))
     const equipment = useAtomValue(trainingEquipment)
@@ -77,8 +86,8 @@ export const Header = (props: { edit?: boolean, id?: string, title?: string, des
         defaultValues: {
             title: props.title || 'Название',
             description: props.description || 'Описание',
-            speakerVolume: 1,
-            musicVolume: 0.7
+            speakerVolume: props.initialSpeakerVolume || 1,
+            musicVolume: props.initialMusicVolume  || 0.7
         }
     })
 
@@ -100,7 +109,7 @@ export const Header = (props: { edit?: boolean, id?: string, title?: string, des
                 id: props.id
             }), {
                 loading: 'Сохранение...',
-                success: 'Успещно! Перенаправление...',
+                success: 'Успешно! Перенаправление...',
                 error: 'Что-то пошло не так...'
             })
         }
@@ -116,7 +125,7 @@ export const Header = (props: { edit?: boolean, id?: string, title?: string, des
     return (
         <Form {...form}>
             <form onSubmit={onClick}>
-                <div className='w-full bg-blue-500 p-4 flex justify-between items-center z-50 fixed top-0'>
+                <div className='w-full bg-blue-500 p-4 flex justify-between items-center z-[500] fixed top-0'>
                     <div className='flex items-center text-white gap-3 lg:gap-8'>
                         <div className="relative">
                             <FormField render={({ field }) => (
@@ -151,14 +160,25 @@ export const Header = (props: { edit?: boolean, id?: string, title?: string, des
                             </Select>
                         </div>
                     </div>
-                    <Button
-                        disabled={isPending || isFetching}
-                        type='button'
-                        onClick={onClick}
-                        className='rounded-xl bg-black hover:bg-[#222]'
-                    >
-                        Сохранитьф
-                    </Button>
+                    <div className='flex items-center gap-4'>
+                        <Button
+                            disabled={isPending || isFetching}
+                            type='button'
+                            onClick={onClick}
+                            className='rounded-xl bg-black hover:bg-[#222]'
+                        >
+                            Сохранить
+                        </Button>
+
+                        {props.edit && <Link href={'/trainings'}>
+                            <Button
+                                type='button'
+                                className='rounded-xl bg-blue-900 hover:bg-blue-950'
+                            >
+                                Выйти
+                            </Button>
+                        </Link>}
+                    </div>
                 </div>
 
                 <h1 className='p-8 text-3xl font-semibold mt-20'>Параметры всей тренировки</h1>

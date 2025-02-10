@@ -8,12 +8,12 @@ import {
     watchTrainingStep,
     watchTrainingVideosBlobs,
     watchTrainingAudiosBlobs,
-    watchTrainingMusicVolume, watchTrainingSpeakerVolume
+    watchTrainingMusicVolume, watchTrainingSpeakerVolume, watchTrainingPlaying, watchTrainingMusicPlaying
 } from "@/features/training/watch/model";
 import { AnimatePresence } from "framer-motion";
 import { IndexedDBService } from "@/shared/indexed-db";
 import { BackgroundAudio } from "./BackgroundAudio";
-import { useSetAtom } from "jotai"; // Импортируем новый компонент
+import { useAtomValue, useSetAtom } from "jotai"; // Импортируем новый компонент
 
 const blockComponents: Record<any, FC<any>> = {
     warmup: WatchTrainingBlocks.Warmup,
@@ -29,7 +29,7 @@ const blockComponents: Record<any, FC<any>> = {
 
 interface IProps {
     blocks: ITrainingBlockWithContent[];
-    trainingAudio: ITrainingAudio[]; // Добавляем training.audio в пропсы
+    trainingAudio: ITrainingAudio[];
     training: ITraining,
 }
 
@@ -64,12 +64,20 @@ export const WatchTraining = (props: IProps) => {
     const [allAudiosBlobs, setAllAudiosBlobs] = useAtom(watchTrainingAudiosBlobs);
     const setMusicVolume = useSetAtom(watchTrainingMusicVolume)
     const setSpeakerVolume = useSetAtom(watchTrainingSpeakerVolume)
+    const isAudioPlaying = useAtomValue(watchTrainingPlaying)
+    const isMusicPlaying = useAtomValue(watchTrainingMusicPlaying)
 
     const nextStep = useCallback(() => {
-        setCurrentStep(prev => prev < (props.blocks.length - 1) ? prev += 1 : prev);
+        setCurrentStep(prev => prev < (props.blocks.length - 1) ? prev + 1 : prev);
     }, [props.blocks.length, setCurrentStep]);
 
+    const prevStep = () => {
+        setCurrentStep(p => p - 1);
+    }
+
     useEffect(() => {
+        setCurrentStep(0)
+
         const loadAllContent = async () => {
             const { videos, audios } = extractVideosAndAudios(props.blocks);
             const indexedDBService = await IndexedDBService.initialize();
@@ -122,9 +130,9 @@ export const WatchTraining = (props: IProps) => {
     const Component = blockComponents[props.blocks[currentStep].type];
 
     return (
-        <>
+        <div className='watch'>
             {/* Добавляем BackgroundAudio.tsx */}
-            <BackgroundAudio audios={props.trainingAudio}  isPlaying />
+            <BackgroundAudio loop={props.training.cycle} audios={props.trainingAudio}  isPlaying={isAudioPlaying && isMusicPlaying} />
 
             <AnimatePresence mode='wait'>
                 {contentLoaded ?
@@ -133,10 +141,11 @@ export const WatchTraining = (props: IProps) => {
                         block={props.blocks[currentStep]}
                         step={currentStep}
                         onComplete={nextStep}
+                        prevStep={prevStep}
                     />
                     : <div>Загрузка...</div>
                 }
             </AnimatePresence>
-        </>
+        </div>
     );
 };

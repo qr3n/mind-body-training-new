@@ -1,4 +1,4 @@
-import { api, API_URL } from "@/shared/api";
+import { api, API_URL, queryClient } from "@/shared/api";
 import { fetchWithJson } from "@/shared/api/utils";
 import { ITraining } from "@/entities/training";
 
@@ -42,13 +42,13 @@ const parseRawTraining = (data: IRawTraining): ITraining => {
 
 class TrainingService {
     async get(id: string) {
-        const rawData = await fetchWithJson<IRawTraining>(`${API_URL}/trainings/${id}`, 'trainings.all')
+        const rawData = await fetchWithJson<IRawTraining>(`${API_URL}/trainings/${id}?v=${Date.now().toString()}`, `training-${id}`)
 
         return parseRawTraining(rawData)
     }
 
     async getAll(): Promise<ITraining[]> {
-        const rawData = await fetchWithJson<IRawTraining[]>(`${API_URL}/trainings`, 'trainings.all')
+        const rawData = await fetchWithJson<IRawTraining[]>(`${API_URL}/trainings?v=${Date.now().toString()}`, 'trainings.all')
 
         return rawData.map(data => parseRawTraining(data))
     }
@@ -67,7 +67,7 @@ class TrainingService {
     }
 
     async edit(data: ICreateTrainingRequest) {
-        return api.put(`/trainings/edit/${data.id}`, {
+        return await api.put(`/trainings/edit/${data.id}`, {
             raw_training_schema: data.rawTraining,
             title: data.title,
             gender: data.gender,
@@ -76,7 +76,7 @@ class TrainingService {
             cycle: data.cycle,
             speaker_volume: data.speaker_volume,
             music_volume: data.music_volume
-        })
+        }).then(() => queryClient.setQueryData(['trainings.all'], (old: ITraining[]) => old.map(t => t.id === data.id ? { ...t, ...data } : t)))
     }}
 
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Dispatch, SetStateAction, useCallback } from 'react';
+import React, { Dispatch, SetStateAction, useCallback, useRef } from 'react';
 import { Button }                                       from "@/shared/shadcn/ui/button";
 import { addPauseImg, audioImg, playAudioImg } from "@/features/training/create/ui/assets";
 import Image from 'next/image';
@@ -121,7 +121,9 @@ export const BlockSounds = (props: { id: string, isEnd?: boolean }) => {
     const sounds = useAtomValue(props.isEnd ? blockEndSoundsAtomFamily(props.id) : blockSoundsAtomFamily(props.id));
     const setSounds = useSetAtom(props.isEnd ? blockEndSoundsAtomFamily(props.id) : blockSoundsAtomFamily(props.id));
     const [isPlaying, setIsPlaying] = useState(false);
-    const [na, setNa] = useAtom(startInAtomFamily(props.id))
+    const [na, setNa] = useAtom(startInAtomFamily(props.id));
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const stopPlayback = useRef(false);
 
     const addPause = () => {
         addSound({
@@ -135,10 +137,22 @@ export const BlockSounds = (props: { id: string, isEnd?: boolean }) => {
     };
 
     const playAll = async () => {
-        if (isPlaying) return;
+        if (isPlaying) {
+            stopPlayback.current = true;
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+            }
+            setIsPlaying(false);
+            return;
+        }
+
+        stopPlayback.current = false;
         setIsPlaying(true);
 
         for (const sound of sounds) {
+            if (stopPlayback.current) break;
+
             if (sound.type === 'pause') {
                 await new Promise(resolve => setTimeout(resolve, sound.duration));
             } else if (sound.type === 'audio') {
@@ -146,7 +160,6 @@ export const BlockSounds = (props: { id: string, isEnd?: boolean }) => {
                 if (audioData) {
                     try {
                         let audioSrc: string;
-
                         if (audioData.blob) {
                             audioSrc = audioData.blob;
                         } else {
@@ -156,6 +169,8 @@ export const BlockSounds = (props: { id: string, isEnd?: boolean }) => {
                         }
 
                         const audio = new Audio(audioSrc);
+                        audioRef.current = audio;
+
                         await new Promise(resolve => {
                             audio.onended = resolve;
                             audio.play();
@@ -178,16 +193,16 @@ export const BlockSounds = (props: { id: string, isEnd?: boolean }) => {
     const calculateTotalDuration = useCallback(() => {
         const total = sounds.reduce((sum, sound) => {
             if (sound.type === 'pause') {
-                return sum + sound.duration / 1000; // перевод из миллисекунд в секунды
+                return sum + sound.duration / 1000;
             } else if (sound.type === 'audio') {
                 const audioData = data?.find(d => d.id === sound.id);
-                return sum + (audioData?.duration || 0); // предполагается, что audioData.duration уже в секундах
+                return sum + (audioData?.duration || 0);
             }
             return sum;
         }, 0);
 
-        return parseFloat(total.toFixed(1)); // округление до 1 знака после запятой
-    }, [data, sounds])
+        return parseFloat(total.toFixed(1));
+    }, [data, sounds]);
 
     return (
         <div>
@@ -201,27 +216,30 @@ export const BlockSounds = (props: { id: string, isEnd?: boolean }) => {
                     <Button type='button' onClick={addPause} className='flex gap-2 pr-12 justify-start text-[#777]' variant='ghost'>
                         <Image src={addPauseImg} alt='add-pause' width={26} /> Добавить паузу
                     </Button>
-                    {props.isEnd && <div className='flex gap-4 items-center ml-4 mt-6 text-[#777]'>
-                        <p className='text-sm mt-1'>Начать за</p>
-                        <input
-                            value={na.toString()}
-                            onChange={v => setNa(Number(v.target.value))}
-                            className='w-10 h-10 text-blue-500 border-2 border-blue-500 text-center text-sm flex items-center justify-center font-bold rounded-xl'/>
-                        <p className='text-sm mt-1'>сек</p>
-                    </div>}
+                    {props.isEnd && (
+                        <div className='flex gap-4 items-center ml-4 mt-6 text-[#777]'>
+                            <p className='text-sm mt-1'>Начать за</p>
+                            <input
+                                value={na.toString()}
+                                onChange={v => setNa(Number(v.target.value))}
+                                className='w-10 h-10 text-blue-500 border-2 border-blue-500 text-center text-sm flex items-center justify-center font-bold rounded-xl'
+                            />
+                            <p className='text-sm mt-1'>сек</p>
+                        </div>
+                    )}
                 </div>
                 <div className='hidden md:block flex-grow w-[1px] rounded-full bg-blue-500'/>
                 <div className='flex flex-col w-full'>
                     <div className='flex items-center justify-between flex-col sm:flex-row'>
                         <Button
+                            type='button'
                             variant='ghost'
                             className='w-max text-[#777] gap-2 flex'
                             onClick={playAll}
-                            disabled={isPlaying}>
+                        >
                             <Image src={playAudioImg} alt='play-audio' width={26} />
-                            {isPlaying ? "Воспроизведение..." : "Воспроизвести полностью"}
+                            {isPlaying ? "Остановить" : "Воспроизвести полностью"}
                         </Button>
-
                         <div className='text-[#777] flex items-center gap-2 text-sm'>
                             <h1>Суммарное время</h1>
                             <div className='py-2 px-3 border-blue-500 text-blue-500 rounded-xl border-2 font-semibold'>

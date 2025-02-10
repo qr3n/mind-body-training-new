@@ -18,11 +18,11 @@ export const SecondLevelCircle = (props: DraggableChildProps) => {
             parentId={block?.parentId}
             color="gray"
             level='second'
-            label={'КРУГ'}
+            label={`КРУГ ${props.index + 1}`}
             {...props}
         >
             <CreateTrainingTemplates.BlockSounds id={props.id}/>
-            <CreateTrainingTemplates.AddBlocks isTransparent blocksTypes={['rest', 'exercise']} parentId={props.id} level={'third'}/>
+            <CreateTrainingTemplates.AddBlocks isTransparent blocksTypes={['rest', 'exercise', 'phrase']} parentId={props.id} level={'third'}/>
             <div className='py-2'/>
 
             <DraggableList

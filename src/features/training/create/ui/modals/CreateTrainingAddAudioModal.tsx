@@ -79,7 +79,7 @@ export const CreateTrainingAddSoundModal = (props: { id: string, isEnd?: boolean
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button className="flex gap-2 pr-12 justify-start text-[#777]" variant="ghost">
+                <Button type='button' className="flex gap-2 pr-12 justify-start text-[#777]" variant="ghost">
                     <Image src={addAudioImg} alt="add-audio" width={32} />
                     Добавить аудио
                 </Button>

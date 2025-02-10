@@ -5,5 +5,5 @@ export const useVideos = () => useQuery({
     queryFn: videoService.getAll,
     queryKey: ['library.videos'],
     retryOnMount: false,
-    refetchOnMount: false
+    refetchOnMount: false,
 })

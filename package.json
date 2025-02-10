@@ -39,6 +39,7 @@
     "jotai-tanstack-query": "^0.9.0",
     "lucide-react": "^0.461.0",
     "next": "15.0.3",
+    "nextjs-toploader": "^3.7.15",
     "react": "19.0.0-rc-66855b96-20241106",
     "react-audio-player": "^0.17.0",
     "react-canvas-video": "^0.0.4",
@@ -53,6 +54,7 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "use-ripple-hook": "^1.0.24",
+    "uuid": "^11.0.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {

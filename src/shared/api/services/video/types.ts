@@ -27,6 +27,7 @@ export interface IAvailableVideo {
     previewBlob?: string,
     imageBlob?: string,
     filename: string,
+    checksum?: string,
 }
 
 export interface IAddVideoToLibraryRequestData {

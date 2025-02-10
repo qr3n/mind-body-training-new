@@ -34,10 +34,10 @@ export const CreateTrainingAddVideoModal = (props: { blockId: string }) => {
     const [searchName, setSearchName] = useState("");
     const addVideo = useSetAtom(addVideoToBlock);
 
-    const handleClick = useCallback((id: string, equipment: string[]) => {
+    const handleClick = useCallback((id: string, equipment: string[], type: string, checksum?: string) => {
         addVideo({
             blockId: props.blockId,
-            video: { id }
+            video: { id, type, checksum },
         })
 
         setEquipment((prevEquipment) => {
@@ -203,7 +203,7 @@ export const CreateTrainingAddVideoModal = (props: { blockId: string }) => {
                                 >
                                     <DialogClose asChild>
                                         <div
-                                            onClick={() => handleClick(video.id, video.equipment)}
+                                            onClick={() => handleClick(video.id, video.equipment, video.exercise_type, video.checksum)}
                                             className='absolute top-0 left-0 rounded-2xl w-full h-full'/>
                                     </DialogClose>
                                     <div className='w-full aspect-video bg-gray-100 rounded-2xl'>
@@ -211,7 +211,7 @@ export const CreateTrainingAddVideoModal = (props: { blockId: string }) => {
                                             width={400}
                                             height={300}
                                             className='w-full aspect-video rounded-2xl'
-                                            src={video.previewBlob || `${API_URL}/content/library/video/preview/${video.id}`}
+                                            src={video.previewBlob || `${API_URL}/content/library/video/preview/${video.id}?v=${Date.now().toString()}`}
                                             alt={'video-preview'}
                                         />
                                     </div>

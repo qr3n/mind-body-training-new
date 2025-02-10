@@ -65,7 +65,6 @@ class VideoService {
             })
         }
 
-
         queryClient.setQueryData(['library.videos'], (oldData: IAvailableVideo[]) => {
             if (!oldData) return oldData;
 
@@ -87,11 +86,13 @@ class VideoService {
 
         const formData = objectToFormData(duration ? {...data, duration: duration.toString()} : data)
 
-        await toast.promise(api.put('/content/library/video', formData), {
-            loading: `Изменение видео...`,
-            success: `Видео изменено!`,
-            error: `Что-то пошло не так...`
-        })
+        await toast.promise(api.put<string>('/content/library/video', formData).then(r =>
+            queryClient.setQueryData(['library.videos'], (old: IAvailableVideo[]) => old.map(video => video.id === data.video_id ? {...video, checksum: r.data} : video))),
+            {
+                loading: `Изменение видео...`,
+                success: `Видео изменено!`,
+                error: `Что-то пошло не так...`
+            })
     }
 
     async addToLibrary(data: IAddVideoToLibraryRequestData) {
@@ -122,6 +123,7 @@ class VideoService {
                 }
             ]
         })
+
         const formData = objectToFormData({...data, duration: duration })
 
         await toast.promise(api.post('/content/library/video', formData).then(r => queryClient.setQueryData(['library.videos'], (old: IAvailableVideo[] = []) => {

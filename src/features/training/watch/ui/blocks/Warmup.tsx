@@ -2,13 +2,15 @@ import { IWatchTrainingBlockProps } from "@/features/training/watch/ui/blocks/ty
 import { WatchTrainingTemplate } from "@/features/training/watch/ui/templates";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCurrentBlockStep }      from "@/features/training/watch/model/useCurrentBlockStep";
+import { Phrase } from "@/features/training/watch/ui/blocks/Phrase";
 
 export const Warmup = (props: IWatchTrainingBlockProps) => {
     const { currentStep, handleNext , handlePrev } = useCurrentBlockStep(props)
 
     const staticBlock = [
         <WatchTrainingTemplate.BlockText
-            icon={<svg xmlns="http://www.w3.org/2000/svg" xlinkHref="http://www.w3.org/1999/xlink" width="150"
+            handlePrev={handlePrev}
+            icon={<svg className='max-w-[23vh] max-h-[23vh]' xmlns="http://www.w3.org/2000/svg" xlinkHref="http://www.w3.org/1999/xlink" width="150"
                        height="150" viewBox="0 0 256 256" fill="none">
                 <rect width="256" height="256" fill="url(#pattern0_10_2)"/>
                 <defs>
@@ -33,13 +35,17 @@ export const Warmup = (props: IWatchTrainingBlockProps) => {
     ];
 
     const dynamicBlocks = props.block.content?.map((content, i) => {
-        return (
-            [
-                <WatchTrainingTemplate.BlockVideos
-                    restType={(content.type === 'rest') ? (i < 2 ? 'first' : 'second') : undefined}
-                    handlePrev={handlePrev} renderExerciseNumber handleNext={handleNext} key={i + 1} block={content}
-                    type={content.type}/>
-            ]
+        return content.type === 'phrase' ? <Phrase prevStep={handlePrev} block={content} onComplete={handleNext} step={props.step}/> : (
+            <WatchTrainingTemplate.BlockVideos
+                exerciseNumber={i + 1}
+                exercisesCount={props.block.content?.filter(c => c.type === 'exercise').length}
+                restType={(content.type === 'rest') ? (i < 2 ? 'first' : 'second') : undefined}
+                handlePrev={handlePrev}
+                renderExerciseNumber
+                handleNext={handleNext}
+                key={i + 1}
+                block={content}
+                type={content.type}/>
         );
     }).flat();
 

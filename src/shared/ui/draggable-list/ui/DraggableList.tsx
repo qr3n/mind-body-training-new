@@ -6,7 +6,8 @@ export interface DraggableChildProps {
     dragHandleProps: DraggableProvidedDragHandleProps | null;
     isDragging: boolean;
     isDimmed: boolean;
-    level?: 'first' | 'second' | 'third'
+    level?: 'first' | 'second' | 'third',
+    index: number
 }
 
 interface IProps {
@@ -56,6 +57,7 @@ export const DraggableList = memo(({ blocksIds, setBlocksIds, renderElement: Ele
                                     >
                                         <Element
                                             id={id}
+                                            index={index}
                                             dragHandleProps={provided.dragHandleProps}
                                             isDragging={draggingId === id}
                                             isDimmed={draggingId !== null && draggingId !== id}

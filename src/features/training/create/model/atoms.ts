@@ -1,5 +1,6 @@
 import { atom } from "jotai";
 import {
+    IAnswer,
     ITraining,
     ITrainingAudio, ITrainingBlockWithContent,
     ITrainingPause,
@@ -26,7 +27,7 @@ export const blockEndSoundsAtomFamily = atomFamily((_: string) => atom<(ITrainin
 export const allBlocksIds = atom<string[]>([])
 export const trainingEquipment = atom<string[]>([])
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const blockQuestionsAtomFamily = atomFamily((_: string) => atom<{ question: string; answer: boolean | null }[]>([]));
+export const blockQuestionsAtomFamily = atomFamily((_: string) => atom<string>(''));
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const blockTitleAtomFamily = atomFamily((_: string) => atom(""));
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -38,12 +39,14 @@ export const isSomethingUploadingAtom = atom(false)
 export const startInAtomFamily = atomFamily((_: string) => atom(9));
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const slideDurationAtomFamily = atomFamily((_: string) => atom(10));
+export const blockAnswersAtomFamily = atomFamily((_: string) => atom<IAnswer[]>([]));
+export const cycleTrainingMusic = atom(false)
 
 export const addQuestionToBlock = atom(
     null,
     (get, set, { blockId, question }: { blockId: string; question: string }) => {
-        const currentQuestions = get(blockQuestionsAtomFamily(blockId));
-        set(blockQuestionsAtomFamily(blockId), [...currentQuestions, { question, answer: null }]);
+        const currentQuestions = get(blockAnswersAtomFamily(blockId));
+        set(blockAnswersAtomFamily(blockId), [...currentQuestions, { text: question, isCorrect: false }]);
     }
 );
 
@@ -332,7 +335,8 @@ export const assembleTrainingBlocksAtom = atom((get) => {
             })
             .filter(Boolean) as TTrainingBlock[];
 
-        const questions = get(blockQuestionsAtomFamily(blockId));
+        const question = get(blockQuestionsAtomFamily(blockId))
+        const answers = get(blockAnswersAtomFamily(blockId));
         const title = get(blockTitleAtomFamily(blockId)); // Получаем заголовок
         const description = get(blockDescriptionAtomFamily(blockId)); // Получаем описание
         const imageName = get(blockImagesNamesAtomFamily(blockId));
@@ -346,7 +350,8 @@ export const assembleTrainingBlocksAtom = atom((get) => {
             videos: get(blockVideosAtomFamily(blockId)),
             ending: get(blockEndSoundsAtomFamily(blockId)),
             imageName,
-            questions,
+            question,
+            answers,
             title,
             description,
             startIn,
@@ -407,13 +412,15 @@ export const resetAllAtomsAtom = atom(null, (get, set) => {
         set(blockSoundsAtomFamily(blockId), []);
         set(blockVideosAtomFamily(blockId), []);
         set(blockEndSoundsAtomFamily(blockId), []);
-        set(blockQuestionsAtomFamily(blockId), []);
+        set(blockQuestionsAtomFamily(blockId), '');
+        set(blockAnswersAtomFamily(blockId), []);
         set(blockTitleAtomFamily(blockId), "");
         set(blockDescriptionAtomFamily(blockId), "");
         set(blockImagesNamesAtomFamily(blockId), "");
         set(childBlocksAtomFamily(blockId), []);
     });
 
+    set(cycleTrainingMusic, false)
     set(isSomethingUploadingAtom, false);
 });
 
@@ -425,10 +432,11 @@ export const initializeBlocksAtom = atom(
         const flatBlocks = flattenBlocks(blocks);
         set(resetAllAtomsAtom)
         set(trainingEquipment, training.equipment)
+        set(cycleTrainingMusic, training.cycle)
         set(blockSoundsAtomFamily('root.audios'), training.audio)
 
         flatBlocks.forEach((block) => {
-            const { id, parentId, level, videos, ending, audios, title, description, imageName, questions, startIn, slideDuration, ...blockData } = block;
+            const { id, parentId, level, videos, ending, audios, title, description, question, imageName, answers, startIn, slideDuration, ...blockData } = block;
             set(allBlocksIds, [...get(allBlocksIds), id]);
 
             if (level === 'first') {
@@ -448,7 +456,9 @@ export const initializeBlocksAtom = atom(
             set(blockTitleAtomFamily(id), title || "");
             set(blockDescriptionAtomFamily(id), description || "");
             set(blockImagesNamesAtomFamily(id), imageName || "");
-            set(blockQuestionsAtomFamily(id), questions || []);
+            set(blockAnswersAtomFamily(id), answers || []);
+            set(blockQuestionsAtomFamily(id), question || '')
+
             if (startIn) set(startInAtomFamily(id), startIn)
             if (slideDuration) set(slideDurationAtomFamily(id), slideDuration)
         });

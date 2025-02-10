@@ -19,7 +19,7 @@ export const Split = (props: DraggableChildProps) => {
             {...props}
         >
             <CreateTrainingTemplates.BlockSounds id={props.id}/>
-            <CreateTrainingTemplates.AddBlocks blocksTypes={['rest', 'exercise']} parentId={props.id} level={'second'}/>
+            <CreateTrainingTemplates.AddBlocks blocksTypes={['rest', 'exercise', 'phrase']} parentId={props.id} level={'second'}/>
             <div className='py-2'/>
 
             <DraggableList

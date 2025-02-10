@@ -8,9 +8,5 @@ export const api = axios.create({
 })
 
 export const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: {
-            refetchOnWindowFocus: false,
-        },
-    },
+    defaultOptions: {},
 })
