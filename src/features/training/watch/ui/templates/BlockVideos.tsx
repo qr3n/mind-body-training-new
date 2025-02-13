@@ -34,7 +34,9 @@ interface IProps {
     renderExerciseNumber?: boolean,
     restType?: 'first' | 'second',
     exerciseNumber?: number,
-    exercisesCount?: number
+    exercisesCount?: number,
+    circleNumber?: number
+    circlesCount?: number
 }
 
 const colorsMap = [
@@ -321,6 +323,10 @@ export const BlockVideos = (props: IProps) => {
                         <h1 className='text-white  text-sm'>
                             {props.headerText}
                         </h1>
+                        {props.circleNumber && <h1 className='text-right text-white  text-sm'>
+                            Круг {props.circleNumber} / {props.circlesCount}
+                        </h1>}
+
                         {props.renderExerciseNumber && <h1 className='text-white  text-sm'>
                             Упражнение {props.exerciseNumber} / {props.exercisesCount}
                         </h1>}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useAtomValue, useSetAtom } from "jotai";
-import { childBlocksAtomFamily } from "@/features/training/create/model";
+import { allBlocksIds, childBlocksAtomFamily } from "@/features/training/create/model";
 import { DraggableList } from "@/shared/ui/draggable-list";
 import { ChooseFirstLevelBlockForRender } from "@/features/training/create/ui/blocks/ChooseBlockForRender";
 

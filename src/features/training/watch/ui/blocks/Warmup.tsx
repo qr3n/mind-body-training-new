@@ -3,9 +3,43 @@ import { WatchTrainingTemplate } from "@/features/training/watch/ui/templates";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCurrentBlockStep }      from "@/features/training/watch/model/useCurrentBlockStep";
 import { Phrase } from "@/features/training/watch/ui/blocks/Phrase";
+import { ITrainingBlockWithContent } from "@/entities/training";
+import { getTrainingLabel } from "@/shared/utils/getTrainingLabel";
 
+interface Block extends ITrainingBlockWithContent {
+    exerciseNumber?: number;
+    circleNumber?: number;
+}
 export const Warmup = (props: IWatchTrainingBlockProps) => {
     const { currentStep, handleNext , handlePrev } = useCurrentBlockStep(props)
+
+    let exerciseCount = 0;
+
+    const groupedBlocks = (props.block.content || []).reduce((acc: Block[][], block: Block, index: number, arr: Block[]) => {
+        if (block.type === 'phrase') {
+            acc.push([{ ...block }]); // Добавляем фразу как отдельную группу
+            return acc;
+        }
+
+        if (block.type === 'rest' && arr[index + 1]?.type === 'exercise') {
+            exerciseCount++;
+            acc.push([
+                { ...block, exerciseNumber: exerciseCount },
+                { ...arr[index + 1], exerciseNumber: exerciseCount }
+            ]);
+        } else if (block.type === 'exercise' && (index === 0 || arr[index - 1]?.type !== 'rest')) {
+            exerciseCount++;
+            acc.push([{ ...block, exerciseNumber: exerciseCount }]);
+        } else if (block.type === 'rest') {
+            acc.push([{ ...block }]); // Добавляем отдельно стоящий отдых
+        }
+
+        return acc;
+    }, []);
+
+    console.log(groupedBlocks)
+
+    const exercisesCount = groupedBlocks.length;
 
     const staticBlock = [
         <WatchTrainingTemplate.BlockText
@@ -28,26 +62,32 @@ export const Warmup = (props: IWatchTrainingBlockProps) => {
                     <h1 className="font-semibold text-5xl">
                         {props.block?.content?.filter((item) => item.type === "rest").length}
                     </h1>
-                    <h1 className="font-medium text-[#eee]">Упражнения</h1>
+                    <h1 className="font-medium text-[#eee]">{getTrainingLabel(props.block?.content?.filter((item) => item.type === "rest").length || 0)}</h1>
                 </div>
             </div>
         </WatchTrainingTemplate.BlockText>,
     ];
 
-    const dynamicBlocks = props.block.content?.map((content, i) => {
-        return content.type === 'phrase' ? <Phrase prevStep={handlePrev} block={content} onComplete={handleNext} step={props.step}/> : (
-            <WatchTrainingTemplate.BlockVideos
-                exerciseNumber={i + 1}
-                exercisesCount={props.block.content?.filter(c => c.type === 'exercise').length}
-                restType={(content.type === 'rest') ? (i < 2 ? 'first' : 'second') : undefined}
-                handlePrev={handlePrev}
-                renderExerciseNumber
-                handleNext={handleNext}
-                key={i + 1}
-                block={content}
-                type={content.type}/>
-        );
-    }).flat();
+
+    const dynamicBlocks = groupedBlocks.map((group, i) =>
+        group.map((b: Block) =>
+            b.type === 'phrase' ? (
+                <Phrase key={b.id || Date.now().toString()} prevStep={handlePrev} block={b} onComplete={handleNext} step={props.step} />
+            ) : (
+                <WatchTrainingTemplate.BlockVideos
+                    restType={b.type === 'rest' ? (i < 2 ? 'first' : 'second') : undefined}
+                    handlePrev={handlePrev}
+                    renderExerciseNumber
+                    handleNext={handleNext}
+                    key={b.id || Date.now().toString()}
+                    exerciseNumber={b.exerciseNumber}
+                    exercisesCount={exercisesCount}
+                    block={b}
+                    type={b.type}
+                />
+            )
+        )
+    ).flat();
 
     const blocks = [...staticBlock, ...(dynamicBlocks || [])];
 

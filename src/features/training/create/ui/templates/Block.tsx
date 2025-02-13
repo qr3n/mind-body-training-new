@@ -64,7 +64,7 @@ export const Block = memo(({ id, parentId, color, level, label, dragHandleProps,
             blockId: id,
             level: level || 'first',
             parentId
-        })
+        }, copyBlock)
     }, [copyBlock, id, level, parentId])
 
     const toggleCollapse = useCallback(() => {

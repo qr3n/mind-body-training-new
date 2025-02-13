@@ -200,6 +200,9 @@ export const removeCreateTrainingBlock = atom(
         const allVideoIds = get(allVideoIdsAtom); // ID всех видео в тренировке
         const allChild = get(getAllNestedChildrenAtom)(blockId); // Все дочерние блоки
 
+        console.log(`🛑 Удаляем блок: ${blockId} (уровень: ${level}, parentId: ${parentId})`);
+        console.log("📌 Дочерние блоки перед удалением:", get(childBlocksAtomFamily(blockId)));        
+
         // Удаление дочерних блоков
         if (parentId) {
             const parentChildIds = get(childBlocksAtomFamily(parentId));
@@ -252,10 +255,19 @@ export const allTrainingVideosAtom = atom((get) => {
     const blockIds = get(allBlocksIds);
     return blockIds.flatMap((id) => get(blockVideosAtomFamily(id)));
 });
+
+interface CopyBlockArgs {
+    blockId: string;
+    level: 'first' | 'second' | 'third';
+    parentId?: string;
+}
+
+type CopyBlockFunction = (args: CopyBlockArgs, copyBlock: CopyBlockFunction) => void;
+
 // Atom для копирования блока
-export const copyCreateTrainingBlock = atom(
+export const copyCreateTrainingBlock = atom<null, [CopyBlockArgs, CopyBlockFunction], void>(
     null,
-    (get, set, { blockId, level, parentId }: { blockId: string; level: 'first' | 'second' | 'third'; parentId?: string }) => {
+    (get, set, { blockId, level, parentId }, copyBlock) => {
         const id = Date.now().toString();
 
         // Копирование блока
@@ -302,11 +314,16 @@ export const copyCreateTrainingBlock = atom(
 
             // Копирование дочерних блоков
             const childIds = get(childBlocksAtomFamily(blockId));
-            set(childBlocksAtomFamily(id), []);
+
             childIds.forEach((childId) => {
                 const childLevel = level === 'first' ? 'second' : level === 'second' ? 'third' : null;
+                
                 if (childLevel) {
-                    set(copyCreateTrainingBlock, { blockId: childId, level: childLevel, parentId: id });
+                    console.log(childLevel)
+
+                    setTimeout(() => {
+                        copyBlock({ blockId: childId, level: childLevel, parentId: id }, copyBlock);
+                    }, 0);
                 }
             });
         }
@@ -437,17 +454,23 @@ export const initializeBlocksAtom = atom(
 
         flatBlocks.forEach((block) => {
             const { id, parentId, level, videos, ending, audios, title, description, question, imageName, answers, startIn, slideDuration, ...blockData } = block;
+            
             set(allBlocksIds, [...get(allBlocksIds), id]);
 
             if (level === 'first') {
                 set(childBlocksAtomFamily('root'), [...get(childBlocksAtomFamily('root')), id]);
-                set(createTrainingFirstLevelBlocksAtomFamily(id), blockData);
+                set(createTrainingFirstLevelBlocksAtomFamily(id), {...blockData, parentId});
             } else if (level === 'second') {
                 set(childBlocksAtomFamily(parentId), [...get(childBlocksAtomFamily(parentId)), id]);
-                set(createTrainingSecondLevelBlocksAtomFamily(id), blockData);
+                set(createTrainingSecondLevelBlocksAtomFamily(id), {...blockData, parentId});
             } else if (level === 'third') {
                 set(childBlocksAtomFamily(parentId), [...get(childBlocksAtomFamily(parentId)), id]);
-                set(createTrainingThirdLevelBlocksAtomFamily(id), blockData);
+                set(createTrainingThirdLevelBlocksAtomFamily(id), {...blockData, parentId});
+            }
+            
+            const currentChildren = get(childBlocksAtomFamily(parentId)) || [];
+            if (!currentChildren.includes(id)) {
+                set(childBlocksAtomFamily(parentId), [...currentChildren, id]);
             }
 
             set(blockSoundsAtomFamily(id), audios || []);

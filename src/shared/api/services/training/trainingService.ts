@@ -76,7 +76,7 @@ class TrainingService {
             cycle: data.cycle,
             speaker_volume: data.speaker_volume,
             music_volume: data.music_volume
-        }).then(() => queryClient.setQueryData(['trainings.all'], (old: ITraining[]) => old.map(t => t.id === data.id ? { ...t, ...data } : t)))
+        })
     }}
 
 
