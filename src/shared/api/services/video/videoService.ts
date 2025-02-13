@@ -86,7 +86,7 @@ class VideoService {
 
         const formData = objectToFormData(duration ? {...data, duration: duration.toString()} : data)
 
-        await toast.promise(api.put<string>('/content/library/video', formData).then(r =>
+        return await toast.promise(api.put<string>('/content/library/video', formData).then(r =>
             queryClient.setQueryData(['library.videos'], (old: IAvailableVideo[]) => old.map(video => video.id === data.video_id ? {...video, checksum: r.data} : video))),
             {
                 loading: `Изменение видео...`,

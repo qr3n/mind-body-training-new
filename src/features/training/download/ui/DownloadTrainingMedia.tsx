@@ -36,8 +36,6 @@ export const DownloadTrainingMedia = (props: { training: ITraining }) => {
         const tx = db.transaction(storeName, "readonly");
         const store = tx.objectStore(storeName);
 
-        console.log('EXISTS IF')
-
         try {
             const file = await store.get(id);
             await tx.done;
@@ -52,7 +50,7 @@ export const DownloadTrainingMedia = (props: { training: ITraining }) => {
         }
 
     };
-    // Скачивание файла по URL
+
     const downloadFile = async (url: string) => {
         const response = await fetch(url);
         if (!response.ok) {

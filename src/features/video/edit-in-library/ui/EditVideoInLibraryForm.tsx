@@ -30,6 +30,8 @@ import { allTrainingVideosAtom, trainingEquipment } from "@/features/training/cr
 import { FaPause } from "react-icons/fa6";
 import { FaPlay } from "react-icons/fa";
 import { Slider } from "@/shared/shadcn/ui/slider";
+import { openDB } from "idb";
+import { IndexedDBService } from "@/shared/indexed-db";
 
 export const EditVideoInLibraryForm = (props: { id: string, setOpen: (open: boolean) => void }) => {
     const setEquipment = useSetAtom(trainingEquipment)
@@ -40,7 +42,7 @@ export const EditVideoInLibraryForm = (props: { id: string, setOpen: (open: bool
     const [progress, setProgress] = useState(0);
 
     const allVideos = useAtomValue(allTrainingVideosAtom)
-    const { mutate } = useMutation({
+    const { mutateAsync } = useMutation({
         mutationFn: videoService.editVideoInLibrary,
         mutationKey: ['video.edit']
     })
@@ -93,13 +95,44 @@ export const EditVideoInLibraryForm = (props: { id: string, setOpen: (open: bool
         });
 
         props.setOpen(false);
-        mutate({
-            video_id: props.id,
-            ...formData,
-            video: formData.video ? formData.video : undefined,
-            image: formData.image ? formData.image : undefined,
-            duration: 800,
-        });
+
+        async function send() {
+            await mutateAsync({
+                video_id: props.id,
+                ...formData,
+                video: formData.video ? formData.video : undefined,
+                image: formData.image ? formData.image : undefined,
+                duration: 800,
+            }).then(async (d) => {
+                if (formData.video) {
+                    const initDB = async () => {
+                        return openDB("trainingMediaDB", 1, {
+                            upgrade(db) {
+                                if (!db.objectStoreNames.contains("videos")) {
+                                    db.createObjectStore("videos", { keyPath: "id" });
+                                }
+                                if (!db.objectStoreNames.contains("sounds")) {
+                                    db.createObjectStore("sounds", { keyPath: "id" });
+                                }
+                            },
+                        });
+                    };
+
+                    const db = await initDB();
+                    const tx = db.transaction("videos", "readonly");
+                    const store = tx.objectStore("videos");
+                    const indexedDBService = await IndexedDBService.initialize();
+
+                    await indexedDBService.save_video({
+                        id: props.id,
+                        blob: formData.video,
+                        checksum: 'NEW CHECKSUM' }
+                    );
+                }
+            });
+        }
+
+        send()
     }
 
     const handlePlayPause = () => {
@@ -165,7 +198,6 @@ export const EditVideoInLibraryForm = (props: { id: string, setOpen: (open: bool
                             </FormItem>
                         )}
                     />
-
 
                     <FormField
                         control={form.control}

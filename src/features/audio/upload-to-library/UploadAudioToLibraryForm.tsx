@@ -51,7 +51,7 @@ const UploadSkeleton = () => {
 
 export const UploadAudioToLibraryForm = (props: { setIsOpen: Dispatch<SetStateAction<boolean>> }) => {
     const setIsFetching = useSetAtom(isSomethingUploadingAtom)
-    const {mutateAsync} = useMutation({
+    const { mutateAsync } = useMutation({
         mutationFn: audioService.addToLibrary,
         mutationKey: ['library.videos.upload']
     })
@@ -66,7 +66,9 @@ export const UploadAudioToLibraryForm = (props: { setIsOpen: Dispatch<SetStateAc
 
     function onSubmit(data: z.infer<typeof FormSchema>) {
         setIsFetching(true)
+
         mutateAsync(data).then(() => setIsFetching(false))
+
         props.setIsOpen(false)
     }
 
