@@ -28,7 +28,7 @@ export const Rest = (props: DraggableChildProps) => {
             <div>
                 <div>
                     <CreateTrainingTemplates.BlockSounds id={props.id}/>
-                    <CreateTrainingTemplates.BlockSounds id={props.id} isEnd/>
+                    <CreateTrainingTemplates.BlockSounds id={props.id} type={'end'} isEnd/>
                     <CreateTrainingTemplates.BlockVideos blockId={props.id}/>
                 </div>
                 <div className='flex justify-end'>

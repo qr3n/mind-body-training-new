@@ -185,7 +185,7 @@ export const Header = (props: IProps) => {
                 <div className='px-8'>
                     <Equipment/>
                     <div className='flex gap-12 '>
-                        <BlockSounds id={'root.audios'}/>
+                        <BlockSounds id={'root.audios'} type={'sounds'}/>
                         <div className='w-[200px] mt-16 text-zinc-600'>
                             <h1>Громкость</h1>
 

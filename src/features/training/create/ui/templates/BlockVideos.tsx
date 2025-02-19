@@ -5,13 +5,20 @@ import { Button }                              from "@/shared/shadcn/ui/button";
 import Image from 'next/image'
 import { CreateTrainingAddVideoModal } from "@/features/training/create/ui/modals/CreateTrainingAddVideoModal";
 import { useAtomValue, useSetAtom } from "jotai";
-import { blockVideosAtomFamily, removeVideoFromBlock } from "@/features/training/create/model";
+import {
+    blockVideosAtomFamily,
+    checkInputResultsAtomFamily,
+    cycleVideoAtomFamily,
+    removeVideoFromBlock, needUseVideoSoundAtomFamily
+} from "@/features/training/create/model";
 import { useVideos } from "@/entities/video/model/hooks";
 import { API_URL } from "@/shared/api";
 import { CanvasVideoPlayer } from "@/shared/ui/canvas-video";
 import { AnimatedCheckbox } from "@/shared/ui/animated-checkbox";
 import React, { useCallback, useState } from "react";
 import { RiDeleteBinLine } from "react-icons/ri";
+import { useAtom } from "jotai/index";
+import { watchedVideosAtom } from "@/features/training/watch/model";
 
 const RenderVideosContent = (props: { id: string, isPlaying: boolean, onVideoEnd: () => void }) => {
     const videos = useAtomValue(blockVideosAtomFamily(props.id));
@@ -28,11 +35,11 @@ const RenderVideosContent = (props: { id: string, isPlaying: boolean, onVideoEnd
                         width={200}
                         src={
                             data?.find(a => a.id === video.id)?.videoBlob ||
-                            `${API_URL}/content/stream/video/${video.id}?v=${Date.now().toString()}`
+                            `${API_URL}/content/stream/video/${video.id}?v=${video.checksum}`
                         }
                         preview={
                             data?.find(a => a.id === video.id)?.previewBlob ||
-                            `${API_URL}/content/library/video/preview/${video.id}?v=${Date.now().toString()}`
+                            `${API_URL}/content/library/video/preview/${video.id}?v=${video.checksum}`
                         }
                         isPlaying={props.isPlaying && i === 0}
                         onVideoEnd={props.onVideoEnd}
@@ -85,9 +92,9 @@ const RenderVideosText = (props: { id: string }) => {
 };
 
 export const BlockVideos = (props: { blockId: string }) => {
-    const [checkedCycle, setCheckedCycle] = useState(false);
-    const [checkedInputResults, setCheckedInputResults] = useState(false);
-    const [useVideoSound, setUseVideoSounds] = useState(false);
+    const [checkedCycle, setCheckedCycle] = useAtom(cycleVideoAtomFamily(props.blockId));
+    const [checkedInputResults, setCheckedInputResults] = useAtom(checkInputResultsAtomFamily(props.blockId));
+    const [useVideoSound, setUseVideoSounds] = useAtom(needUseVideoSoundAtomFamily(props.blockId));
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
     const videos = useAtomValue(blockVideosAtomFamily(props.blockId))

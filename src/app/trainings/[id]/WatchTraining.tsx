@@ -1,19 +1,23 @@
 'use client';
 
 import { WatchTrainingBlocks } from "@/features/training/watch/ui/blocks";
-import { FC, useCallback, useEffect, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import { ITrainingBlockWithContent, ITrainingAudio, ITrainingVideo, ITraining } from "@/entities/training";
 import { useAtom } from "jotai/index";
 import {
     watchTrainingStep,
     watchTrainingVideosBlobs,
     watchTrainingAudiosBlobs,
-    watchTrainingMusicVolume, watchTrainingSpeakerVolume, watchTrainingPlaying, watchTrainingMusicPlaying
+    watchTrainingMusicVolume,
+    watchTrainingSpeakerVolume,
+    watchTrainingPlaying,
+    watchTrainingMusicPlaying,
+    resetAllBlockIndex
 } from "@/features/training/watch/model";
 import { AnimatePresence } from "framer-motion";
 import { IndexedDBService } from "@/shared/indexed-db";
 import { BackgroundAudio } from "./BackgroundAudio";
-import { useAtomValue, useSetAtom } from "jotai"; // Импортируем новый компонент
+import { useAtomValue, useSetAtom } from "jotai";
 
 const blockComponents: Record<any, FC<any>> = {
     warmup: WatchTrainingBlocks.Warmup,
@@ -24,7 +28,9 @@ const blockComponents: Record<any, FC<any>> = {
     greeting: WatchTrainingBlocks.Greetings,
     testing: WatchTrainingBlocks.Testing,
     done: WatchTrainingBlocks.Done,
-    phrase: WatchTrainingBlocks.Phrase
+    phrase: WatchTrainingBlocks.Phrase,
+    lapsQty: WatchTrainingBlocks.LapsQty,
+    repsQty: WatchTrainingBlocks.RepsQty
 };
 
 interface IProps {
@@ -33,7 +39,77 @@ interface IProps {
     training: ITraining,
 }
 
-const extractVideosAndAudios = (blocks: ITrainingBlockWithContent[]): { videos: ITrainingVideo[], audios: ITrainingAudio[] } => {
+function transformTrainingBlocks(blocks: ITrainingBlockWithContent[]): ITrainingBlockWithContent[] {
+    // Создаем копию исходного массива, чтобы не мутировать оригинал
+    const original = [...blocks];
+
+    // Извлекаем блок "greetings", если он есть
+    const greetingsIndex = original.findIndex(b => b.type === 'greeting');
+    let greetingsBlock: ITrainingBlockWithContent | undefined;
+    if (greetingsIndex !== -1) {
+        greetingsBlock = original.splice(greetingsIndex, 1)[0];
+    }
+
+    // Находим блоки "circle" и "split"
+    const circleBlock = original.find(b => b.type === 'circle');
+    const splitBlock = original.find(b => b.type === 'split');
+
+    // if (circleBlock) {
+    //     const lapsQtyAudios = circleBlock.lapsQtyAudios || [];
+    //
+    //     circleBlock.audios = [...(circleBlock.audios || []), ...lapsQtyAudios];
+    //
+    //     delete circleBlock.lapsQtyAudios;
+    // }
+    //
+    // if (splitBlock) {
+    //     const repsQtyAudios = splitBlock.repsQtyAudios || [];
+    //     splitBlock.audios = [...(splitBlock.audios || []), ...repsQtyAudios];
+    //
+    //     delete splitBlock.repsQtyAudios; // Удаляем repsQtyAudios, так как они перенесены
+    // }
+
+    // Собираем результирующий массив
+    const result: ITrainingBlockWithContent[] = [];
+
+    // Добавляем "greetings" первым, если он существует
+    if (greetingsBlock) {
+        result.push(greetingsBlock);
+    }
+
+    // Добавляем "lapsQty" после "greetings", если есть "circle"
+    if (circleBlock) {
+        const lapsQtyBlock: ITrainingBlockWithContent = {
+            type: 'lapsQty',
+            videos: [],
+            audios: [],
+            circlesTimes: circleBlock.content?.map(c =>
+                c?.content?.reduce((sum, d) => sum + (d.slideDuration ?? 0), 0) ?? 0
+            )
+        };
+        result.push(lapsQtyBlock);
+    }
+
+    if (splitBlock) {
+        const repsQtyBlock: ITrainingBlockWithContent = {
+            type: 'repsQty',
+            videos: [],
+            audios: [],
+        };
+        result.push(repsQtyBlock);
+    }
+
+    // Добавляем все оставшиеся блоки из исходного массива (без greetings)
+    result.push(...original);
+
+    return result;
+}
+
+const extractVideosAndAudios = (blocks: ITrainingBlockWithContent[]):
+    {
+        videos: ITrainingVideo[],
+        audios: ITrainingAudio[],
+    } => {
     let videos: ITrainingVideo[] = [];
     let audios: ITrainingAudio[] = [];
 
@@ -47,6 +123,13 @@ const extractVideosAndAudios = (blocks: ITrainingBlockWithContent[]): { videos: 
         if ('ending' in block) {
             audios = [...audios, ...block.ending!];
         }
+        // if ('repsQtyAudios' in block) {
+        //     audios = [...audios, ...block.ending!];
+        // }
+        // if ('lapsQtyAudios' in block) {
+        //     audios = [...audios, ...block.ending!];
+        // }
+
         if ('content' in block) {
             const { videos: innerVideos, audios: innerAudios } = extractVideosAndAudios(block.content || []);
             videos = [...videos, ...innerVideos];
@@ -54,10 +137,11 @@ const extractVideosAndAudios = (blocks: ITrainingBlockWithContent[]): { videos: 
         }
     });
 
-    return { videos, audios };
+    return { videos, audios,  };
 };
 
 export const WatchTraining = (props: IProps) => {
+    const resetAllBlockIndexes = useSetAtom(resetAllBlockIndex)
     const [contentLoaded, setContentLoaded] = useState(false);
     const [currentStep, setCurrentStep] = useAtom(watchTrainingStep);
     const [allVideosBlobs, setAllVideosBlobs] = useAtom(watchTrainingVideosBlobs);
@@ -66,20 +150,33 @@ export const WatchTraining = (props: IProps) => {
     const setSpeakerVolume = useSetAtom(watchTrainingSpeakerVolume)
     const isAudioPlaying = useAtomValue(watchTrainingPlaying)
     const isMusicPlaying = useAtomValue(watchTrainingMusicPlaying)
+    const { videos, audios } = extractVideosAndAudios(props.blocks);
+    const blocks = useMemo(() => transformTrainingBlocks(props.blocks), [])
 
     const nextStep = useCallback(() => {
-        setCurrentStep(prev => prev < (props.blocks.length - 1) ? prev + 1 : prev);
-    }, [props.blocks.length, setCurrentStep]);
+        setCurrentStep(prev => prev < (blocks.length - 1) ? prev + 1 : prev);
+    }, [blocks.length, setCurrentStep]);
 
     const prevStep = () => {
         setCurrentStep(p => p - 1);
     }
 
     useEffect(() => {
-        setCurrentStep(0)
+        console.log(currentStep)
+    }, [currentStep])
 
+    useEffect(() => {
+        console.log('rerender')
+
+        setCurrentStep(0)
+        resetAllBlockIndexes()
+        setAllVideosBlobs({})
+        setAllAudiosBlobs({})
+    }, [])
+
+    useEffect(() => {
         const loadAllContent = async () => {
-            const { videos, audios } = extractVideosAndAudios(props.blocks);
+
             const indexedDBService = await IndexedDBService.initialize();
 
             const newAudios = [...audios, ...props.trainingAudio]
@@ -125,9 +222,12 @@ export const WatchTraining = (props: IProps) => {
         loadAllContent().then(() => {
             setContentLoaded(true);
         }).catch(e => console.log(e));
-    }, [allVideosBlobs, allAudiosBlobs, props.blocks, setAllVideosBlobs, setAllAudiosBlobs]);
+    }, [allVideosBlobs, allAudiosBlobs, setAllVideosBlobs, setAllAudiosBlobs, videos, audios]);
 
-    const Component = blockComponents[props.blocks[currentStep].type];
+    const Component = blockComponents[blocks[currentStep].type];
+
+    console.log(props.blocks)
+    console.log(blocks)
 
     return (
         <div className='watch'>
@@ -137,8 +237,8 @@ export const WatchTraining = (props: IProps) => {
             <AnimatePresence mode='wait'>
                 {contentLoaded ?
                     <Component
-                        key={`${props.blocks[currentStep].type}-${currentStep}`}
-                        block={props.blocks[currentStep]}
+                        key={`${blocks[currentStep].type}-${currentStep}`}
+                        block={blocks[currentStep]}
                         step={currentStep}
                         onComplete={nextStep}
                         prevStep={prevStep}

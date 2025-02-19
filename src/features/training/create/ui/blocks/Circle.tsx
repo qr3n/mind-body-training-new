@@ -24,6 +24,8 @@ export const Circle = (props: DraggableChildProps) => {
             }
         >
             <CreateTrainingTemplates.BlockSounds id={props.id}/>
+            <h1 className='text-xl ml-4 font-medium mb-6 pt-8'>Выбор кол-ва кругов</h1>
+            <CreateTrainingTemplates.BlockSounds type={'laps_qty'} id={props.id}/>
 
             <DraggableList
                 blocksIds={childIds}

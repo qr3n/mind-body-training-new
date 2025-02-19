@@ -112,7 +112,9 @@ export const UploadAudioToLibraryForm = (props: { setIsOpen: Dispatch<SetStateAc
                 />
 
                 <div className='w-full flex justify-end'>
-                    <Button type="submit">Добавить в библиотеку</Button>
+                    <Button type="button" onClick={() => form.handleSubmit(onSubmit)()}>
+                        Добавить в библиотеку
+                    </Button>
                 </div>
             </form>
         </Form>

@@ -7,8 +7,8 @@ import { IWatchTrainingBlockProps } from "@/features/training/watch/ui/blocks/ty
 import Image from "next/image";
 import { speakerImg } from "@/features/training/watch/ui/assets";
 import { WatchTrainingTemplate } from "@/features/training/watch/ui/templates";
-import { watchTrainingMusicPlaying } from "@/features/training/watch/model";
-import { useSetAtom } from "jotai";
+import { watchTrainingMusicPlaying,  } from "@/features/training/watch/model";
+import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
 
 
@@ -21,7 +21,7 @@ export const Phrase = (props: IWatchTrainingBlockProps) => {
 
     return (
         <div className='relative w-[100dvw] h-[100dvh] flex items-center justify-center'>
-            <WatchTrainingTemplate.BlockSounds isPlaying block={props.block}/>
+            <WatchTrainingTemplate.BlockSounds  isPlaying block={props.block}/>
             <motion.div
                 initial={{height: 0}}
                 animate={{height: '50%'}}

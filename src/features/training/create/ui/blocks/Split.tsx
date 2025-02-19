@@ -18,8 +18,11 @@ export const Split = (props: DraggableChildProps) => {
             label={'SPLIT'}
             {...props}
         >
-            <CreateTrainingTemplates.BlockSounds id={props.id}/>
-            <CreateTrainingTemplates.AddBlocks blocksTypes={['rest', 'exercise', 'phrase']} parentId={props.id} level={'second'}/>
+            <CreateTrainingTemplates.BlockSounds type={'sounds'} id={props.id}/>
+            <h1 className='text-xl ml-4 font-medium mb-6 pt-8'>Выбор кол-ва подходов</h1>
+            <CreateTrainingTemplates.BlockSounds type={'reps_qty'} id={props.id}/>
+            <CreateTrainingTemplates.AddBlocks blocksTypes={['splitApproach']} parentId={props.id}
+                                               level={'second'}/>
             <div className='py-2'/>
 
             <DraggableList

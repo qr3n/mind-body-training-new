@@ -18,7 +18,7 @@ export const Ascet = (props: DraggableChildProps) => {
             label={'ASCET'}
             {...props}
         >
-            <CreateTrainingTemplates.BlockSounds id={props.id}/>
+            <CreateTrainingTemplates.BlockSounds type={'sounds'} id={props.id}/>
             <CreateTrainingTemplates.AddBlocks blocksTypes={['rest', 'exercise', 'phrase']} parentId={props.id} level={'second'}/>
             <div className='py-2'/>
             <DraggableList

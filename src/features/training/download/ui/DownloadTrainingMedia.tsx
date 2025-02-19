@@ -10,12 +10,15 @@ import { IndexedDBService } from "@/shared/indexed-db";
 import { ITraining, ITrainingAudio, ITrainingBlockWithContent, ITrainingVideo } from "@/entities/training";
 import { Edit }                                                      from "lucide-react";
 import { useVideos } from "@/entities/video";
+import { useSetAtom } from "jotai/index";
+import { watchTrainingAscetSeconds } from "@/features/training/watch/model";
 
 export const DownloadTrainingMedia = (props: { training: ITraining }) => {
     const { data } = useVideos()
     const { training } = props;
     const [isLoading, setIsLoading] = useState(false);
     const [allFilesDownloaded, setAllFilesDownloaded] = useState(false);
+    const setTrainingAscetSeconds = useSetAtom(watchTrainingAscetSeconds)
 
     // Инициализация базы данных IndexedDB
     const initDB = async () => {
@@ -48,7 +51,6 @@ export const DownloadTrainingMedia = (props: { training: ITraining }) => {
         } catch {
             return false;
         }
-
     };
 
     const downloadFile = async (url: string) => {
@@ -94,7 +96,7 @@ export const DownloadTrainingMedia = (props: { training: ITraining }) => {
             for (const video of videos) {
                 const alreadyExists = await isFileExists("videos", video.id, data?.find(v => v.id === video.id)?.checksum);
                 if (!alreadyExists) {
-                    const videoBlob = await downloadFile(`${API_URL}/content/stream/video/${video.id}?v=${video.checksum}`);
+                    const videoBlob = await downloadFile(`${API_URL}/content/stream/video/${video.id}?v=${Date.now().toString()}`);
                     await indexedDBService.save_video({ id: video.id, blob: videoBlob, checksum: data?.find(v => v.id === video.id)?.checksum });
                 }
             }
@@ -103,7 +105,7 @@ export const DownloadTrainingMedia = (props: { training: ITraining }) => {
             for (const audio of audios) {
                 const alreadyExists = await isFileExists("sounds", audio.id);
                 if (!alreadyExists) {
-                    const audioBlob = await downloadFile(`${API_URL}/content/stream/audio/${audio.id}`);
+                    const audioBlob = await downloadFile(`${API_URL}/content/stream/audio/${audio.id}?v=${Date.now().toString()}`);
                     await indexedDBService.save_audio({ id: audio.id, blob: audioBlob });
                 }
             }
@@ -157,7 +159,7 @@ export const DownloadTrainingMedia = (props: { training: ITraining }) => {
             </Link>
             {allFilesDownloaded ? (
                 <Link href={`/trainings/${training.id}`}>
-                    <Button>
+                    <Button onClick={() => setTrainingAscetSeconds(undefined)}>
                         Перейти к просмотру
                     </Button>
                 </Link>

@@ -9,6 +9,8 @@ import { Split } from "./Split";
 import { Stretch } from "./Stretch";
 import { Testing } from "./Testing";
 import { Warmup } from "./Warmup";
+import { LapsQty } from "./LapsQty";
+import { RepsQty } from "./RepsQty";
 import { SecondLevelCircle } from "./SecondLevelCircle";
 
 export const WatchTrainingBlocks = {
@@ -23,5 +25,7 @@ export const WatchTrainingBlocks = {
     Stretch,
     Testing,
     Warmup,
-    SecondLevelCircle
+    SecondLevelCircle,
+    RepsQty,
+    LapsQty
 }

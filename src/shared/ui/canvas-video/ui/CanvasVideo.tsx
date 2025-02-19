@@ -4,13 +4,14 @@ interface CanvasVideoPlayerProps {
     src: string;
     preview?: string;
     isPlaying?: boolean;
+    isMuted?: boolean; // Новый проп для управления звуком
     onVideoEnd?: () => void;
     onTimeUpdate?: (currentTime: number) => void;
     width: number;
 }
 
 export const CanvasVideoPlayer: React.FC<CanvasVideoPlayerProps> = memo(
-    ({ src, preview, isPlaying, onVideoEnd, onTimeUpdate }) => {
+    ({ src, preview, isPlaying, isMuted, onVideoEnd, onTimeUpdate }) => {
         const videoRef = useRef<HTMLVideoElement | null>(null);
         const canvasRef = useRef<HTMLCanvasElement | null>(null);
         const animationFrameIdRef = useRef<number | null>(null);
@@ -85,12 +86,12 @@ export const CanvasVideoPlayer: React.FC<CanvasVideoPlayerProps> = memo(
                 if (imageLoaded && previewImageRef.current) {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(previewImageRef.current, 0, 0, canvas.width, canvas.height);
-                } else {
-                    video.currentTime = 0;
-                    video.onseeked = () => {
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    };
                 }
+            }
+
+            // Устанавливаем звук на основе пропа isMuted
+            if (video) {
+                video.muted = isMuted ?? false;
             }
 
             return () => {
@@ -99,7 +100,7 @@ export const CanvasVideoPlayer: React.FC<CanvasVideoPlayerProps> = memo(
                 }
                 video.removeEventListener("timeupdate", handleTimeUpdate);
             };
-        }, [isPlaying, imageLoaded, videoLoaded, onVideoEnd, onTimeUpdate]);
+        }, [isPlaying, isMuted, imageLoaded, videoLoaded, onVideoEnd, onTimeUpdate]);
 
         return (
             <div className="bg-gray-100 relative sm:rounded-2xl aspect-video max-w-[1200px]">

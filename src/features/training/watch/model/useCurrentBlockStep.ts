@@ -1,13 +1,19 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { IWatchTrainingBlockProps } from "@/features/training/watch/ui/blocks/types";
 import { useAtom } from "jotai/index";
-import { currentBlockIndexAtomFamily } from "@/features/training/watch/model/atoms";
+import { allCurrentBlockIndexesIds, currentBlockIndexAtomFamily } from "@/features/training/watch/model/atoms";
+import { useSetAtom } from "jotai";
 
 export const useCurrentBlockStep = (props: IWatchTrainingBlockProps, isCircle?: boolean) => {
+    const setAllIds = useSetAtom(allCurrentBlockIndexesIds)
     const [currentStep, setCurrentStep] = useAtom(currentBlockIndexAtomFamily(props.block.id || (props.block.type + props.block.slideDuration + props.block.videos)));
 
+    useEffect(() => {
+        setAllIds(prev => [...prev, props.block.id || (props.block.type + props.block.slideDuration + props.block.videos)])
+    }, [])
+
     const handleNext = useCallback(() => {
-        const totalLength = props.block.content ? 1 + props.block.content.reduce(
+        const totalLength = props.block.content ? 1 + (isCircle ? props.block.content.length : 0) + props.block.content.reduce(
             (sum, item) => sum + 1 + (item.content?.length || 0),
             0
         ) : 1

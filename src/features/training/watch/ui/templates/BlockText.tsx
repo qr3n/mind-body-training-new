@@ -6,7 +6,7 @@ import { IoArrowBack } from "react-icons/io5";
 import { PropsWithChildren, ReactElement } from "react";
 
 interface IProps extends PropsWithChildren {
-    text: string,
+    text?: string,
     handleNext: () => void,
     handlePrev: () => void,
     icon?: ReactElement

@@ -11,6 +11,9 @@ export type TBlockType =
     | 'exercise'
     | 'rest'
     | 'secondLevelCircle'
+    | 'splitApproach'
+    | 'lapsQty'
+    | 'repsQty'
 
 export interface ITrainingAudio {
     type: 'audio'
@@ -65,7 +68,11 @@ export type IExercise = ITrainingBlockTemplate<'exercise'>
 
 export type IPhrase = ITrainingBlockTemplate<'phrase'>
 
-export type TTrainingBlock = IGreetings | IAscet | ICircle | ISplit | IWarmup | IStretch | ITesting | IDone | ISecondLevelCircle | IRest | IExercise | IPhrase
+export type ISplitApproach = ITrainingBlockTemplate<'splitApproach'>
+export type ILapsQty = ITrainingBlockTemplate<'lapsQty'>
+export type IRepsQty = ITrainingBlockTemplate<'repsQty'>
+
+export type TTrainingBlock = IGreetings | IAscet | ICircle | ISplit | IWarmup | IStretch | ITesting | IDone | ISecondLevelCircle | IRest | IExercise | IPhrase | ISplitApproach | ILapsQty | IRepsQty
 
 export interface IAnswer {
     text: string;
@@ -86,6 +93,12 @@ export interface ITrainingBlockWithContent {
     ending?: ITrainingAudio[],
     startIn?: number,
     slideDuration?: number,
+    cycleVideo?: boolean,
+    inputResults?: boolean,
+    useVideoAudio?: boolean,
+    repsQtyAudios?: ITrainingAudio[],
+    lapsQtyAudios?: ITrainingAudio[],
+    circlesTimes?: number[],
 }
 
 export interface ITraining {

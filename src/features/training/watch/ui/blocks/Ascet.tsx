@@ -5,6 +5,13 @@ import { useCurrentBlockStep }      from "@/features/training/watch/model/useCur
 import { Phrase } from "@/features/training/watch/ui/blocks/Phrase";
 import { ITrainingBlockWithContent } from "@/entities/training";
 import { getTrainingLabel } from "@/shared/utils/getTrainingLabel";
+import { useAtom } from "jotai/index";
+import {
+    watchTrainingAscetSeconds,
+    watchTrainingMusicVolume,
+    watchTrainingSpeakerVolume
+} from "@/features/training/watch/model";
+import { useAtomValue } from "jotai";
 
 interface Block extends ITrainingBlockWithContent {
     exerciseNumber?: number;
@@ -13,11 +20,10 @@ interface Block extends ITrainingBlockWithContent {
 
 export const Ascet = (props: IWatchTrainingBlockProps) => {
     const { currentStep, handleNext, handlePrev } = useCurrentBlockStep(props)
-
-
-    // Группируем пары "rest + exercise" и назначаем им одинаковый номер
+    const watchSeconds = useAtomValue(watchTrainingAscetSeconds)
 
     let exerciseCount = 0;
+
     const groupedBlocks = (props.block.content || []).reduce((acc: Block[][], block: Block, index: number, arr: Block[]) => {
         if (block.type === 'phrase') {
             acc.push([{ ...block }]); // Добавляем фразу как отдельную группу
@@ -39,8 +45,8 @@ export const Ascet = (props: IWatchTrainingBlockProps) => {
 
         return acc;
     }, []);
-    
-    const exercisesCount = groupedBlocks.length;
+
+    const exercisesCount = groupedBlocks.length - (props.block.content?.filter(c => c.type === 'phrase').length || 0);
 
     const staticBlock = (
         <WatchTrainingTemplate.BlockText
@@ -78,6 +84,8 @@ export const Ascet = (props: IWatchTrainingBlockProps) => {
                 <Phrase key={b.id || Date.now().toString()} prevStep={handlePrev} block={b} onComplete={handleNext} step={props.step} />
             ) : (
                 <WatchTrainingTemplate.BlockVideos
+                    playDuration={b.type === 'exercise' ? watchSeconds : undefined}
+                    videoMuted={!b.useVideoAudio}
                     restType={b.type === 'rest' ? (i < 2 ? 'first' : 'second') : undefined}
                     handlePrev={handlePrev}
                     renderExerciseNumber

@@ -2,9 +2,10 @@
 
 import { motion }                     from "framer-motion";
 import { useAtomValue }                              from 'jotai';
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ITrainingBlockWithContent }                 from "@/entities/training";
 import {
+    watchedVideosAtom,
     watchTrainingMusicVolume, watchTrainingPlaying,
     watchTrainingSpeakerVolume,
     watchTrainingVideosBlobs
@@ -36,7 +37,9 @@ interface IProps {
     exerciseNumber?: number,
     exercisesCount?: number,
     circleNumber?: number
-    circlesCount?: number
+    circlesCount?: number,
+    videoMuted?: boolean,
+    playDuration?: number;
 }
 
 const colorsMap = [
@@ -55,7 +58,7 @@ const TimerMobile = ({ timeLeft, duration, type }: { timeLeft: number; duration:
         const updateScale = () => {
             const height = window.innerHeight;
             const width = window.innerWidth;
-            const newScale = width <= 768 ? Math.min(height / 800, 1.2) : 1; // Увеличение только для мобильных
+            const newScale = width <= 768 ? Math.min(height / 800, 1.2) : 1;
             setScale(newScale);
         };
 
@@ -67,7 +70,7 @@ const TimerMobile = ({ timeLeft, duration, type }: { timeLeft: number; duration:
         };
     }, []);
 
-    const radius = 60 * scale; // Увеличенный радиус на мобильных
+    const radius = 60 * scale;
     const circumference = 2 * Math.PI * radius;
 
     const calculateStrokeDashoffset = () => {
@@ -245,8 +248,12 @@ const exerciseTypesMap: Record<string, string> = {
 
 
 export const BlockVideos = (props: IProps) => {
+    const [watchedVideos, setWatchedVideos] = useAtom(watchedVideosAtom)
+    const [totalPlayedTime, setTotalPlayedTime] = useState(0);
+    const intervalRef = useRef<NodeJS.Timeout>();
+
     const [reset, setReset] = useState(Date.now().toString())
-    const {data: allVideos} = useVideos()
+    const { data: allVideos } = useVideos()
     const [duration] = useState(props.block.slideDuration || 0)
     const videoBlobs = useAtomValue(watchTrainingVideosBlobs);
     const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
@@ -260,30 +267,81 @@ export const BlockVideos = (props: IProps) => {
     const [volume, setVolume] = useAtom(watchTrainingSpeakerVolume)
     const [musicVolume, setMusicVolume] = useAtom(watchTrainingMusicVolume)
 
+    useEffect(() => {
+        return () => setPlaying(true)
+    }, [])
+
     const handlePlayPause = useCallback(() => {
         setPlaying((prev) => !prev);
     }, []);
 
-    const handleVideoEnd = useCallback(() => {
-        if (currentVideoIndex < videoSources.length - 1) {
-            setCurrentVideoIndex((prev) => prev + 1);
-        } else {
-            props.handleNext();
+    useEffect(() => {
+        if (props.playDuration !== undefined && playing) {
+            intervalRef.current = setInterval(() => {
+                setTotalPlayedTime(prev => {
+                    if (prev + 1 >= props.playDuration!) {
+                        clearInterval(intervalRef.current!);
+                        props.handleNext();
+                        setWatchedVideos(prev => [...prev, props.block.id!]);
+                        return 0;
+                    }
+                    return prev + 1;
+                });
+            }, 1000);
         }
-    }, []);
+
+        return () => {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+        };
+    }, [playing, props.playDuration]);
+
+    // Сброс времени при изменении блока или playDuration
+    useEffect(() => {
+        setTotalPlayedTime(0);
+    }, [props.playDuration, props.block.id]);
+
+
+    const handleVideoEnd = useCallback(() => {
+        if (props.playDuration !== undefined) {
+            // Перезапуск видео через сброс ключа
+            setReset(Date.now().toString());
+        } else {
+            // Стандартная логика
+            if (currentVideoIndex < videoSources.length - 1) {
+                setCurrentVideoIndex(prev => prev + 1);
+            } else {
+                setWatchedVideos(prev => [...prev, props.block.id!]);
+                props.handleNext();
+            }
+        }
+    }, [props.playDuration, currentVideoIndex, videoSources.length]);
+
+    // Расчет времени для таймера
+    const timerTimeLeft = props.playDuration !== undefined
+        ? Math.max(props.playDuration - totalPlayedTime, 0)
+        : (time || 0);
+
+    const timerDuration = props.playDuration !== undefined
+        ? props.playDuration
+        : (duration || 0);
+
 
     useEffect(() => {
-        if (time && time < 0 && !hasCalledNext) {
+        if (!props.playDuration && time && time < 0 && !hasCalledNext) {
             props.handleNext();
+            setWatchedVideos(prev => [...prev, props.block.id!]);
             setHasCalledNext(true);
         }
-    }, [time, props, hasCalledNext]);
+    }, [time, props, hasCalledNext, props.playDuration]);
+
 
     const handleNextClick = useCallback(() => {
-        if (currentVideoIndex < videoSources.length - 1) {
-            setCurrentVideoIndex((prev) => prev + 1);
-        } else {
-            props.handleNext();
+        if (watchedVideos.includes(props.block.id!)) {
+            if (currentVideoIndex < videoSources.length - 1) {
+                setCurrentVideoIndex((prev) => prev + 1);
+            } else {
+                props.handleNext();
+            }
         }
     }, [])
 
@@ -297,9 +355,9 @@ export const BlockVideos = (props: IProps) => {
 
     return (
         <div className='relative w-[100dvw] h-[100dvh] flex sm:items-center sm:justify-center flex-col'>
-            <WatchTrainingTemplate.BlockSounds key={reset} volume={volume} isPlaying={playing} block={props.block}/>
+            <WatchTrainingTemplate.BlockSounds key={reset} isPlaying={playing} block={props.block}/>
             {(props.block.ending && props.block.ending.length > 0 && props.block.startIn && time && (time - props.block.startIn <= 0)) &&
-                <WatchTrainingTemplate.BlockSounds isEnding startDelay={0} isPlaying={playing} key={reset + 'end'} volume={volume} block={props.block}/>
+                <WatchTrainingTemplate.BlockSounds isEnding startDelay={0} isPlaying={playing} key={reset + 'end'}  block={props.block}/>
             }
             <motion.div
                 initial={{height: 0}}
@@ -377,13 +435,14 @@ export const BlockVideos = (props: IProps) => {
                                    style={{background: props.type === 'exercise' ? '#4466e2' : '#a8c47c'}}
                                    className='text-white font-semibold text-center py-3 text-lg'>🔥 {currentVideo?.name}</motion.h1>
                         <CanvasVideoPlayer
+                            isMuted={props.videoMuted}
                             key={reset + 'video'}
                             width={1000}
                             src={videoSources[currentVideoIndex]}
                             isPlaying={playing}
                             onVideoEnd={handleVideoEnd}
                             onTimeUpdate={(currentTime) => {
-                                if (time !== undefined) {
+                                if (!props.playDuration && time !== undefined) {
                                     setTime(duration - currentTime);
                                 }
                             }}
@@ -482,13 +541,19 @@ export const BlockVideos = (props: IProps) => {
             </Popover>
             <div className='flex w-full h-[calc(100%-550px)] sm:h-auto sm:mt-4 justify-center items-center'>
                 <div className='hidden sm:block'>
-                    <Timer type={props.type} timeLeft={time ? Math.round(time) : 1}
-                           duration={duration !== 0 ? Math.round(duration) : 1}/>
+                    <Timer
+                        type={props.type}
+                        timeLeft={Math.round(timerTimeLeft)}
+                        duration={Math.round(timerDuration)}
+                    />
                 </div>
 
                 <div className='block sm:hidden'>
-                    <TimerMobile type={props.type} timeLeft={time ? Math.round(time) : 1}
-                                 duration={duration !== 0 ? Math.round(duration) : 1}/>
+                    <TimerMobile
+                        type={props.type}
+                        timeLeft={Math.round(timerTimeLeft)}
+                        duration={Math.round(timerDuration)}
+                    />
                 </div>
 
                 {props.type === 'rest' && <motion.div
@@ -539,7 +604,7 @@ export const BlockVideos = (props: IProps) => {
                 <Button
                     className='w-[clamp(2rem,6vh,2.8rem)] h-[clamp(2rem,6vh,2.8rem)] p-0 shadow-md bg-[#f9f9fa] hover:bg-[#fff] border border-transparent hover:border-[#ccc]'
                     onClick={handleNextClick}
-                    disabled={currentVideoIndex >= videoSources.length && videoSources.length > 0}
+                    disabled={(currentVideoIndex >= videoSources.length && videoSources.length > 0) || !watchedVideos.includes(props.block.id!)}
                 >
                     <GrFormNext className='text-[#333232] w-[clamp(1rem,5vw,2rem)] h-[clamp(1rem,5vh,2rem)]'/>
                 </Button>

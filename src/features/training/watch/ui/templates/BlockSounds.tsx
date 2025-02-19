@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, memo, useMemo } from "react";
-import { watchTrainingAudiosBlobs } from "@/features/training/watch/model";
+import { watchTrainingAudiosBlobs, watchTrainingSpeakerVolume } from "@/features/training/watch/model";
 import { ITrainingBlockWithContent } from "@/entities/training";
 import { useAtomValue } from "jotai";
 
@@ -9,13 +9,14 @@ interface BlockSoundsProps {
     nextAfterComplete?: boolean;
     handleNext?: () => void;
     volume?: number;
-    startDelay?: number; // Время задержки перед воспроизведением в миллисекундах
-    isEnding?: boolean; // Если true, воспроизводятся ending
+    startDelay?: number;
+    isEnding?: boolean;
 }
 
 export const BlockSounds: React.FC<BlockSoundsProps> = memo(
-    ({ block, nextAfterComplete, handleNext, isPlaying, volume = 1, startDelay = 0, isEnding = false }) => {
+    ({ block, nextAfterComplete, handleNext, isPlaying, startDelay = 0, isEnding = false }) => {
         const audiosBlobs = useAtomValue(watchTrainingAudiosBlobs);
+        const volume = useAtomValue(watchTrainingSpeakerVolume)
 
         const [currentIndex, setCurrentIndex] = useState(0);
         const [isDelayed, setIsDelayed] = useState(false);
@@ -24,9 +25,6 @@ export const BlockSounds: React.FC<BlockSoundsProps> = memo(
 
         const audioSources = useMemo(() => {
             const audios = isEnding ? block.ending ?? [] : block.audios;
-
-            console.log(audios)
-            console.log(audiosBlobs)
 
             return audios.map(audio => audiosBlobs[audio.id]).filter(Boolean);
         }, [block, audiosBlobs, isEnding]);
@@ -45,10 +43,9 @@ export const BlockSounds: React.FC<BlockSoundsProps> = memo(
 
             if (!audio || audioSources.length === 0 || !isDelayed) return;
 
-            // Устанавливаем текущий источник, если он изменился
             if (audio.src !== audioSources[currentIndex]) {
                 audio.src = audioSources[currentIndex];
-                setIsTrackEnded(false); // Сбрасываем состояние окончания трека при смене источника
+                setIsTrackEnded(false);
             }
 
             audio.volume = volume;

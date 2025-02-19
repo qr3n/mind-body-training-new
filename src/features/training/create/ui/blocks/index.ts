@@ -10,6 +10,7 @@ import { Stretch } from "./Stretch";
 import { Testing } from "./Testing";
 import { Warmup } from "./Warmup";
 import { SecondLevelCircle } from "./SecondLevelCircle";
+import { SplitApproach } from "./SplitApproach";
 
 export const CreateTrainingBlocks = {
     Ascet,
@@ -23,5 +24,6 @@ export const CreateTrainingBlocks = {
     Stretch,
     Testing,
     Warmup,
-    SecondLevelCircle
+    SecondLevelCircle,
+    SplitApproach
 }

@@ -11,11 +11,10 @@ interface BackgroundAudioProps {
 
 export const BackgroundAudio: React.FC<BackgroundAudioProps> = ({ audios, isPlaying = true, loop = false }) => {
     const volume = useAtomValue(watchTrainingMusicVolume);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
     const audiosBlobs = useAtomValue(watchTrainingAudiosBlobs);
-    const [hasPlayed, setHasPlayed] = useState(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [currentIndex, setCurrentIndex] = useState(0);
 
-    // Обновляем громкость без перезапуска воспроизведения
     useEffect(() => {
         if (audioRef.current) {
             audioRef.current.volume = volume;
@@ -24,35 +23,37 @@ export const BackgroundAudio: React.FC<BackgroundAudioProps> = ({ audios, isPlay
 
     useEffect(() => {
         const audio = audioRef.current;
+        if (!audio || audios.length === 0) return;
 
-        if (!audio || audios.length === 0 || (hasPlayed && !loop)) return;
+        const playAudio = () => {
+            const audioBlob = audiosBlobs[audios[currentIndex]?.id];
+            if (!audioBlob) return;
 
-        const audioBlob = audiosBlobs[audios[0].id];
-
-        if (audioBlob) {
             audio.src = audioBlob;
-            audio.loop = loop;
-
+            audio.loop = false; // Отключаем loop на уровне отдельного трека
             if (isPlaying) {
                 audio.play();
             } else {
                 audio.pause();
             }
+        };
 
-            audio.onended = () => {
-                if (!loop) {
-                    setHasPlayed(true);
-                }
-            };
-        }
+        playAudio();
 
-        return () => {
-            if (audio) {
-                audio.pause();
-                audio.src = "";
+        audio.onended = () => {
+            if (currentIndex < audios.length - 1) {
+                setCurrentIndex((prev) => prev + 1);
+            } else if (loop) {
+                setCurrentIndex(0);
             }
         };
-    }, [audios, audiosBlobs, isPlaying, hasPlayed, loop]);
+
+        return () => {
+            audio.onended = null;
+            audio.pause();
+            audio.src = "";
+        };
+    }, [audios, audiosBlobs, isPlaying, currentIndex, loop]);
 
     return <audio ref={audioRef} style={{ display: "none" }} />;
 };

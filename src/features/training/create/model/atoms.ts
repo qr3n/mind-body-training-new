@@ -20,6 +20,8 @@ export const createTrainingThirdLevelBlocksAtomFamily = atomFamily((_: string) =
 export const childBlocksAtomFamily = atomFamily((_: string) => atom<string[]>([]));
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const blockSoundsAtomFamily = atomFamily((_: string) => atom<(ITrainingAudio | ITrainingPause)[]>([]));
+export const blockRepsQtySoundsAtomFamily = atomFamily((_: string) => atom<(ITrainingAudio | ITrainingPause)[]>([]));
+export const blockLapsQtySoundsAtomFamily = atomFamily((_: string) => atom<(ITrainingAudio | ITrainingPause)[]>([]));
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const blockVideosAtomFamily = atomFamily((_: string) => atom<ITrainingVideo[]>([]));
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -41,6 +43,10 @@ export const startInAtomFamily = atomFamily((_: string) => atom(9));
 export const slideDurationAtomFamily = atomFamily((_: string) => atom(10));
 export const blockAnswersAtomFamily = atomFamily((_: string) => atom<IAnswer[]>([]));
 export const cycleTrainingMusic = atom(false)
+export const cycleVideoAtomFamily = atomFamily((_: string) => atom<boolean>(false));
+export const checkInputResultsAtomFamily = atomFamily((_: string) => atom<boolean>(false));
+export const needUseVideoSoundAtomFamily = atomFamily((_: string) => atom<boolean>(false));
+
 
 export const addQuestionToBlock = atom(
     null,
@@ -107,6 +113,22 @@ export const addEndSoundToBlock = atom(
     }
 );
 
+export const addRepsQtySoundToBlock = atom(
+    null,
+    (get, set, { blockId, audio }: { blockId: string; audio: ITrainingAudio | ITrainingPause }) => {
+        const currentEndSounds = get(blockRepsQtySoundsAtomFamily(blockId));
+        set(blockRepsQtySoundsAtomFamily(blockId), [...currentEndSounds, audio]);
+    }
+);
+
+export const addLapsQtySoundToBlock = atom(
+    null,
+    (get, set, { blockId, audio }: { blockId: string; audio: ITrainingAudio | ITrainingPause }) => {
+        const currentEndSounds = get(blockLapsQtySoundsAtomFamily(blockId));
+        set(blockLapsQtySoundsAtomFamily(blockId), [...currentEndSounds, audio]);
+    }
+);
+
 export const addVideoToBlock = atom(
     null,
     (get, set, { blockId, video }: { blockId: string; video: ITrainingVideo }) => {
@@ -132,6 +154,25 @@ export const removeEndSoundFromBlock = atom(
         set(blockEndSoundsAtomFamily(blockId), updatedSounds);
     }
 );
+
+export const removeRepsQtySoundFromBlock = atom(
+    null,
+    (get, set, { blockId, soundId }: { blockId: string; soundId: string }) => {
+        const currentSounds = get(blockRepsQtySoundsAtomFamily(blockId));
+        const updatedSounds = currentSounds.filter((sound) => sound.id !== soundId);
+        set(blockRepsQtySoundsAtomFamily(blockId), updatedSounds);
+    }
+);
+
+export const removeLapsQtySoundFromBlock = atom(
+    null,
+    (get, set, { blockId, soundId }: { blockId: string; soundId: string }) => {
+        const currentSounds = get(blockLapsQtySoundsAtomFamily(blockId));
+        const updatedSounds = currentSounds.filter((sound) => sound.id !== soundId);
+        set(blockLapsQtySoundsAtomFamily(blockId), updatedSounds);
+    }
+);
+
 
 
 export const removeVideoFromBlock = atom(
@@ -264,13 +305,10 @@ interface CopyBlockArgs {
 
 type CopyBlockFunction = (args: CopyBlockArgs, copyBlock: CopyBlockFunction) => void;
 
-// Atom для копирования блока
 export const copyCreateTrainingBlock = atom<null, [CopyBlockArgs, CopyBlockFunction], void>(
     null,
     (get, set, { blockId, level, parentId }, copyBlock) => {
-        const id = Date.now().toString();
 
-        // Копирование блока
         let blockData: TTrainingBlock | null = null;
         if (level === 'first') {
             blockData = get(createTrainingFirstLevelBlocksAtomFamily(blockId));
@@ -279,9 +317,9 @@ export const copyCreateTrainingBlock = atom<null, [CopyBlockArgs, CopyBlockFunct
         } else if (level === 'third') {
             blockData = get(createTrainingThirdLevelBlocksAtomFamily(blockId));
         }
+        const id = Date.now().toString() + blockData?.type;
 
         if (blockData) {
-            // Добавление копии блока
             if (parentId) {
                 const parentChildIds = get(childBlocksAtomFamily(parentId));
                 set(childBlocksAtomFamily(parentId), [...parentChildIds, id]);
@@ -301,31 +339,37 @@ export const copyCreateTrainingBlock = atom<null, [CopyBlockArgs, CopyBlockFunct
             const title = get(blockTitleAtomFamily(blockId));
             const description = get(blockDescriptionAtomFamily(blockId));
             const imgName = get(blockImagesNamesAtomFamily(blockId));
-            // Копирование аудио
             const audios = get(blockSoundsAtomFamily(blockId));
+            const ending = get(blockEndSoundsAtomFamily(blockId));
+            const startIn = get(startInAtomFamily(blockId));
+            const slideDuration = get(slideDurationAtomFamily(blockId));
+            const videos = get(blockVideosAtomFamily(blockId));
+            const cycleVideo = get(cycleVideoAtomFamily(blockId))
+            const checkedInputResults = get(checkInputResultsAtomFamily(blockId))
+            const useVideoSound = get(needUseVideoSoundAtomFamily(blockId))
+
             set(blockSoundsAtomFamily(id), [...audios]);
+            set(blockEndSoundsAtomFamily(id), [...ending]);
             set(blockTitleAtomFamily(id), title);
+            set(startInAtomFamily(id), startIn);
+            set(slideDurationAtomFamily(id), slideDuration);
             set(blockDescriptionAtomFamily(id), description);
             set(blockImagesNamesAtomFamily(id), imgName);
-
-            // Копирование видео
-            const videos = get(blockVideosAtomFamily(blockId));
             set(blockVideosAtomFamily(id), [...videos]);
+            set(cycleVideoAtomFamily(id), cycleVideo);
+            set(checkInputResultsAtomFamily(id), checkedInputResults);
+            set(needUseVideoSoundAtomFamily(id), useVideoSound);
 
-            // Копирование дочерних блоков
             const childIds = get(childBlocksAtomFamily(blockId));
 
             childIds.forEach((childId) => {
                 const childLevel = level === 'first' ? 'second' : level === 'second' ? 'third' : null;
-                
-                if (childLevel) {
-                    console.log(childLevel)
 
-                    setTimeout(() => {
-                        copyBlock({ blockId: childId, level: childLevel, parentId: id }, copyBlock);
-                    }, 0);
+                if (childLevel) {
+                    copyBlock({ blockId: childId, level: childLevel, parentId: id }, copyBlock);
                 }
             });
+
         }
     }
 );
@@ -359,6 +403,11 @@ export const assembleTrainingBlocksAtom = atom((get) => {
         const imageName = get(blockImagesNamesAtomFamily(blockId));
         const startIn = get(startInAtomFamily(blockId));
         const slideDuration = get(slideDurationAtomFamily(blockId))
+        const cycleVideo = get(cycleVideoAtomFamily(blockId))
+        const inputResults = get(checkInputResultsAtomFamily(blockId))
+        const useVideoAudio = get(needUseVideoSoundAtomFamily(blockId))
+        const repsSounds = get(blockRepsQtySoundsAtomFamily(blockId))
+        const lapsSounds = get(blockLapsQtySoundsAtomFamily(blockId))
 
         return {
             ...block,
@@ -372,7 +421,12 @@ export const assembleTrainingBlocksAtom = atom((get) => {
             title,
             description,
             startIn,
-            slideDuration
+            slideDuration,
+            cycleVideo,
+            inputResults,
+            useVideoAudio,
+            repsQtyAudios: repsSounds,
+            lapsQtyAudios: lapsSounds
         };
     };
 
@@ -435,6 +489,8 @@ export const resetAllAtomsAtom = atom(null, (get, set) => {
         set(blockDescriptionAtomFamily(blockId), "");
         set(blockImagesNamesAtomFamily(blockId), "");
         set(childBlocksAtomFamily(blockId), []);
+        set(blockRepsQtySoundsAtomFamily(blockId), [])
+        set(blockLapsQtySoundsAtomFamily(blockId), [])
     });
 
     set(cycleTrainingMusic, false)
@@ -453,7 +509,7 @@ export const initializeBlocksAtom = atom(
         set(blockSoundsAtomFamily('root.audios'), training.audio)
 
         flatBlocks.forEach((block) => {
-            const { id, parentId, level, videos, ending, audios, title, description, question, imageName, answers, startIn, slideDuration, ...blockData } = block;
+            const { id, parentId, cycleVideo, inputResults, lapsQtyAudios, repsQtyAudios, useVideoAudio, level, videos, ending, audios, title, description, question, imageName, answers, startIn, slideDuration, ...blockData } = block;
             
             set(allBlocksIds, [...get(allBlocksIds), id]);
 
@@ -481,6 +537,11 @@ export const initializeBlocksAtom = atom(
             set(blockImagesNamesAtomFamily(id), imageName || "");
             set(blockAnswersAtomFamily(id), answers || []);
             set(blockQuestionsAtomFamily(id), question || '')
+            set(cycleVideoAtomFamily(id), !!cycleVideo)
+            set(checkInputResultsAtomFamily(id), !!inputResults)
+            set(needUseVideoSoundAtomFamily(id), !!useVideoAudio)
+            set(blockLapsQtySoundsAtomFamily(id), lapsQtyAudios || [])
+            set(blockRepsQtySoundsAtomFamily(id), repsQtyAudios || [])
 
             if (startIn) set(startInAtomFamily(id), startIn)
             if (slideDuration) set(slideDurationAtomFamily(id), slideDuration)

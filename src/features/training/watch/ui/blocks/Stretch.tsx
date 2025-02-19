@@ -5,13 +5,14 @@ import { useCurrentBlockStep }      from "@/features/training/watch/model/useCur
 import { Phrase } from "@/features/training/watch/ui/blocks/Phrase";
 import { ITrainingBlockWithContent } from "@/entities/training";
 import { getTrainingLabel } from "@/shared/utils/getTrainingLabel";
+import { useAtomValue } from "jotai/index";
+import { watchTrainingSpeakerVolume } from "@/features/training/watch/model";
 interface Block extends ITrainingBlockWithContent {
     exerciseNumber?: number;
     circleNumber?: number;
 }
 export const Stretch = (props: IWatchTrainingBlockProps) => {
     const { currentStep, handleNext, handlePrev } = useCurrentBlockStep(props)
-    
     let exerciseCount = 0;
     const groupedBlocks = (props.block.content || []).reduce((acc: Block[][], block: Block, index: number, arr: Block[]) => {
         if (block.type === 'phrase') {
@@ -34,7 +35,7 @@ export const Stretch = (props: IWatchTrainingBlockProps) => {
 
         return acc;
     }, []);
-    const exercisesCount = groupedBlocks.length;
+    const exercisesCount = groupedBlocks.length - (props.block.content?.filter(c => c.type === 'phrase').length || 0);
 
     const staticBlock = [
         <WatchTrainingTemplate.BlockText
@@ -51,7 +52,7 @@ export const Stretch = (props: IWatchTrainingBlockProps) => {
                 </defs>
             </svg>}
             handleNext={handleNext} key={0} text="Растяжка!">
-            <WatchTrainingTemplate.BlockSounds nextAfterComplete handleNext={handleNext} isPlaying block={props.block}/>
+            <WatchTrainingTemplate.BlockSounds  nextAfterComplete handleNext={handleNext} isPlaying block={props.block}/>
             <div className="flex text-white items-center my-8 gap-8 justify-between">
                 <div className="text-center flex justify-center items-center gap-3">
                     <h1 className="font-semibold text-5xl">
@@ -71,6 +72,7 @@ export const Stretch = (props: IWatchTrainingBlockProps) => {
                 <Phrase key={b.id || Date.now().toString()} prevStep={handlePrev} block={b} onComplete={handleNext} step={props.step} />
             ) : (
                 <WatchTrainingTemplate.BlockVideos
+                    videoMuted={!b.useVideoAudio}
                     restType={b.type === 'rest' ? (i < 2 ? 'first' : 'second') : undefined}
                     handlePrev={handlePrev}
                     renderExerciseNumber
@@ -99,3 +101,4 @@ export const Stretch = (props: IWatchTrainingBlockProps) => {
         </motion.div>
     );
 };
+

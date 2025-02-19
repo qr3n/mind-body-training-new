@@ -10,7 +10,12 @@ import { Button } from "@/shared/shadcn/ui/button";
 import Image from "next/image";
 import { addAudioImg } from "@/features/training/create/ui/assets";
 import { useSetAtom }                          from "jotai";
-import { addEndSoundToBlock, addSoundToBlock } from "@/features/training/create/model";
+import {
+    addEndSoundToBlock,
+    addLapsQtySoundToBlock,
+    addRepsQtySoundToBlock,
+    addSoundToBlock
+} from "@/features/training/create/model";
 import { useAudios }                           from "@/entities/audio";
 import { UploadAudioToLibraryModal } from "@/features/audio/upload-to-library/UploadAudioToLibraryModal";
 import useRipple from "use-ripple-hook";
@@ -20,13 +25,23 @@ import { useMemo, useState } from "react";
 import { DeleteAudioFromLibrary } from "@/features/audio/delete-from-library/DeleteAudioFromLibrary";
 import { EditAudioInLibraryModal } from "@/features/audio/edit-in-library/EditAudioInLibraryModal";
 
+
+const typesActionsMap = {
+    'sounds': addSoundToBlock,
+    'end': addEndSoundToBlock,
+    'reps_qty': addRepsQtySoundToBlock,
+    'laps_qty': addLapsQtySoundToBlock,
+}
+
+
 interface IProps extends IAvailableAudio {
     blockId: string,
-    isEnd?: boolean
+    isEnd?: boolean,
+    type: 'sounds' | 'end' | 'laps_qty' | 'reps_qty'
 }
 
 const Audio = (props: IProps) => {
-    const addSound = useSetAtom(props.isEnd ? addEndSoundToBlock : addSoundToBlock)
+    const addSound = useSetAtom(typesActionsMap[props.type])
     const [ref, event] = useRipple({
         color: 'rgba(214,234,255,0.38)'
     })
@@ -61,9 +76,10 @@ const Audio = (props: IProps) => {
                 </div>
             </div>
     )
+
 }
 
-export const CreateTrainingAddSoundModal = (props: { id: string, isEnd?: boolean }) => {
+export const CreateTrainingAddSoundModal = (props: { id: string, isEnd?: boolean, type: 'sounds' | 'end' | 'laps_qty' | 'reps_qty' }) => {
     const { data } = useAudios();
     const audiosNotFound = data && data.length === 0;
 
@@ -112,7 +128,7 @@ export const CreateTrainingAddSoundModal = (props: { id: string, isEnd?: boolean
                                 className="bg-gray-50 rounded-3xl h-min max-h-[calc(80dvh-220px)] px-3 py-3 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {filteredData.length > 0 ? (
                                     filteredData.map((audio) => (
-                                        <Audio isEnd={props.isEnd} {...audio} key={audio.id} blockId={props.id}/>
+                                        <Audio type={props.type} isEnd={props.isEnd} {...audio} key={audio.id} blockId={props.id}/>
                                     ))
                                 ) : (
                                     <p className="text-center text-[#777]">Ничего не найдено</p>

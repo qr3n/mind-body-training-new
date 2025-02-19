@@ -5,6 +5,8 @@ import { useCurrentBlockStep }      from "@/features/training/watch/model/useCur
 import { Phrase } from "@/features/training/watch/ui/blocks/Phrase";
 import { ITrainingBlockWithContent } from "@/entities/training";
 import { getTrainingLabel } from "@/shared/utils/getTrainingLabel";
+import { useAtomValue } from "jotai";
+import { watchTrainingSpeakerVolume } from "@/features/training/watch/model";
 
 interface Block extends ITrainingBlockWithContent {
     exerciseNumber?: number;
@@ -12,12 +14,11 @@ interface Block extends ITrainingBlockWithContent {
 }
 export const Warmup = (props: IWatchTrainingBlockProps) => {
     const { currentStep, handleNext , handlePrev } = useCurrentBlockStep(props)
-
     let exerciseCount = 0;
 
     const groupedBlocks = (props.block.content || []).reduce((acc: Block[][], block: Block, index: number, arr: Block[]) => {
         if (block.type === 'phrase') {
-            acc.push([{ ...block }]); // Добавляем фразу как отдельную группу
+            acc.push([{ ...block }]);
             return acc;
         }
 
@@ -31,15 +32,13 @@ export const Warmup = (props: IWatchTrainingBlockProps) => {
             exerciseCount++;
             acc.push([{ ...block, exerciseNumber: exerciseCount }]);
         } else if (block.type === 'rest') {
-            acc.push([{ ...block }]); // Добавляем отдельно стоящий отдых
+            acc.push([{ ...block }]);
         }
 
         return acc;
     }, []);
 
-    console.log(groupedBlocks)
-
-    const exercisesCount = groupedBlocks.length;
+    const exercisesCount = groupedBlocks.length - (props.block.content?.filter(c => c.type === 'phrase').length || 0);
 
     const staticBlock = [
         <WatchTrainingTemplate.BlockText
@@ -68,13 +67,13 @@ export const Warmup = (props: IWatchTrainingBlockProps) => {
         </WatchTrainingTemplate.BlockText>,
     ];
 
-
     const dynamicBlocks = groupedBlocks.map((group, i) =>
         group.map((b: Block) =>
             b.type === 'phrase' ? (
                 <Phrase key={b.id || Date.now().toString()} prevStep={handlePrev} block={b} onComplete={handleNext} step={props.step} />
             ) : (
                 <WatchTrainingTemplate.BlockVideos
+                    videoMuted={!b.useVideoAudio}
                     restType={b.type === 'rest' ? (i < 2 ? 'first' : 'second') : undefined}
                     handlePrev={handlePrev}
                     renderExerciseNumber

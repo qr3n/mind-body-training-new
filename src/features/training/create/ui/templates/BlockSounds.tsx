@@ -7,9 +7,9 @@ import Image from 'next/image';
 import { CreateTrainingAddSoundModal } from "@/features/training/create/ui/modals/CreateTrainingAddAudioModal";
 import { useAtom, useSetAtom } from "jotai/index";
 import {
-    addEndSoundToBlock,
-    addSoundToBlock, blockEndSoundsAtomFamily,
-    blockSoundsAtomFamily, removeEndSoundFromBlock,
+    addEndSoundToBlock, addLapsQtySoundToBlock, addRepsQtySoundToBlock,
+    addSoundToBlock, blockEndSoundsAtomFamily, blockLapsQtySoundsAtomFamily, blockRepsQtySoundsAtomFamily,
+    blockSoundsAtomFamily, removeEndSoundFromBlock, removeLapsQtySoundFromBlock, removeRepsQtySoundFromBlock,
     removeSoundFromBlock, startInAtomFamily,
     updatePauseDurationAtom
 } from "@/features/training/create/model";
@@ -22,20 +22,46 @@ import { DraggableList } from "@/shared/ui/draggable-list";
 import { DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
 import { RiDeleteBinLine } from "react-icons/ri";
 
+
+const typesActionsMap = {
+    'sounds': addSoundToBlock,
+    'end': addEndSoundToBlock,
+    'reps_qty': addRepsQtySoundToBlock,
+    'laps_qty': addLapsQtySoundToBlock,
+}
+
+const removeSoundsActionsMap = {
+    'sounds': removeSoundFromBlock,
+    'end': removeEndSoundFromBlock,
+    'reps_qty': removeRepsQtySoundFromBlock,
+    'laps_qty': removeLapsQtySoundFromBlock,
+}
+
+const soundsTypesMap = {
+    'sounds': blockSoundsAtomFamily,
+    'end': blockEndSoundsAtomFamily,
+    'reps_qty': blockRepsQtySoundsAtomFamily,
+    'laps_qty': blockLapsQtySoundsAtomFamily,
+}
+
+
+
 const RenderSounds = ({
                           sounds,
                           onReorder,
                           blockId,
-                          isEnd
+                          isEnd,
+                          type
                       }: {
     sounds: (ITrainingAudio | ITrainingPause)[];
     onReorder: Dispatch<SetStateAction<string[]>> | ((newOrder: string[]) => void);
     blockId: string,
-    isEnd?: boolean
+    isEnd?: boolean,
+    type: 'sounds' | 'end' | 'laps_qty' | 'reps_qty'
 }) => {
     const { data } = useAudios();
     const [, updatePauseDuration] = useAtom(updatePauseDurationAtom);
-    const removeSound = useSetAtom(isEnd ? removeEndSoundFromBlock : removeSoundFromBlock)
+    const removeSound = useSetAtom(removeSoundsActionsMap[type])
 
     const renderElement = ({
                                id,
@@ -115,11 +141,17 @@ const RenderSounds = ({
     );
 };
 
-export const BlockSounds = (props: { id: string, isEnd?: boolean }) => {
+
+export const BlockSounds = (props: {
+    id: string,
+    isEnd?: boolean,
+    type?: 'sounds' | 'end' | 'laps_qty' | 'reps_qty'
+}) => {
+    const type = props.type || 'sounds'
     const { data } = useAudios();
-    const addSound = useSetAtom(props.isEnd ? addEndSoundToBlock : addSoundToBlock);
-    const sounds = useAtomValue(props.isEnd ? blockEndSoundsAtomFamily(props.id) : blockSoundsAtomFamily(props.id));
-    const setSounds = useSetAtom(props.isEnd ? blockEndSoundsAtomFamily(props.id) : blockSoundsAtomFamily(props.id));
+    const addSound = useSetAtom(typesActionsMap[type]);
+    const sounds = useAtomValue(soundsTypesMap[type](props.id));
+    const setSounds = useSetAtom(soundsTypesMap[type](props.id));
     const [isPlaying, setIsPlaying] = useState(false);
     const [na, setNa] = useAtom(startInAtomFamily(props.id));
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -212,7 +244,7 @@ export const BlockSounds = (props: { id: string, isEnd?: boolean }) => {
             </div>
             <div className='mt-6 flex flex-col md:flex-row gap-8 mb-8'>
                 <div className='flex flex-col gap-2 w-[300px] overflow-hidden'>
-                    <CreateTrainingAddSoundModal isEnd={props.isEnd} id={props.id} />
+                    <CreateTrainingAddSoundModal type={type} isEnd={props.isEnd} id={props.id} />
                     <Button type='button' onClick={addPause} className='flex gap-2 pr-12 justify-start text-[#777]' variant='ghost'>
                         <Image src={addPauseImg} alt='add-pause' width={26} /> Добавить паузу
                     </Button>
@@ -249,7 +281,7 @@ export const BlockSounds = (props: { id: string, isEnd?: boolean }) => {
                         </div>
                     </div>
                     <div className='flex flex-col gap-3 mt-8'>
-                        <RenderSounds isEnd={props.isEnd} blockId={props.id} sounds={sounds} onReorder={handleReorder} />
+                        <RenderSounds type={type} isEnd={props.isEnd} blockId={props.id} sounds={sounds} onReorder={handleReorder} />
                     </div>
                 </div>
             </div>

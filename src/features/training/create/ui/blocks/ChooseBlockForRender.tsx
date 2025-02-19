@@ -13,7 +13,21 @@ interface IChooseBlockForRenderProps extends DraggableChildProps {
 }
 
 
-const blocksMap: Record<TBlockType, (props: DraggableChildProps) => ReactElement>  = {
+const blocksMap: {
+    ascet: (props: DraggableChildProps) => JSX.Element;
+    circle: (props: DraggableChildProps) => JSX.Element;
+    done: (props: DraggableChildProps) => JSX.Element;
+    exercise: (props: DraggableChildProps) => JSX.Element;
+    greeting: (props: DraggableChildProps) => JSX.Element;
+    phrase: (props: DraggableChildProps) => JSX.Element;
+    rest: (props: DraggableChildProps) => JSX.Element;
+    split: (props: DraggableChildProps) => JSX.Element;
+    stretch: (props: DraggableChildProps) => JSX.Element;
+    testing: (props: DraggableChildProps) => JSX.Element;
+    warmup: (props: DraggableChildProps) => JSX.Element;
+    secondLevelCircle: (props: DraggableChildProps) => JSX.Element;
+    splitApproach: (props: DraggableChildProps) => JSX.Element
+}  = {
     ascet: CreateTrainingBlocks.Ascet,
     circle: CreateTrainingBlocks.Circle,
     done: CreateTrainingBlocks.Done,
@@ -25,10 +39,13 @@ const blocksMap: Record<TBlockType, (props: DraggableChildProps) => ReactElement
     stretch: CreateTrainingBlocks.Stretch,
     testing: CreateTrainingBlocks.Testing,
     warmup: CreateTrainingBlocks.Warmup,
-    secondLevelCircle: CreateTrainingBlocks.SecondLevelCircle
+    secondLevelCircle: CreateTrainingBlocks.SecondLevelCircle,
+    splitApproach: CreateTrainingBlocks.SplitApproach
 }
 
 const ChooseBlockForRender = (props: IChooseBlockForRenderProps) => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
     const Component = blocksMap[props.type]
 
     return (
