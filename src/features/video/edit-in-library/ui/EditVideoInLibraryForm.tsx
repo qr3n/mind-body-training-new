@@ -32,6 +32,8 @@ import { FaPlay } from "react-icons/fa";
 import { Slider } from "@/shared/shadcn/ui/slider";
 import { openDB } from "idb";
 import { IndexedDBService } from "@/shared/indexed-db";
+import { Checkbox } from "@/shared/shadcn/ui/checkbox";
+import { getVideoDuration } from "@/shared/utils/getVideoDuraton";
 
 export const EditVideoInLibraryForm = (props: { id: string, setOpen: (open: boolean) => void }) => {
     const setEquipment = useSetAtom(trainingEquipment)
@@ -40,6 +42,7 @@ export const EditVideoInLibraryForm = (props: { id: string, setOpen: (open: bool
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [slowMotion, setSlowMotion] = useState(video?.playback_rate === 0.5);
 
     const allVideos = useAtomValue(allTrainingVideosAtom)
     const { mutateAsync } = useMutation({
@@ -57,6 +60,7 @@ export const EditVideoInLibraryForm = (props: { id: string, setOpen: (open: bool
             muscles_group: video?.muscles_group || [],
             equipment: video?.equipment || [],
             gender: video?.gender || videoGenders[0],
+            playback_rate: video?.playback_rate || 1
         },
     });
 
@@ -97,12 +101,15 @@ export const EditVideoInLibraryForm = (props: { id: string, setOpen: (open: bool
         props.setOpen(false);
 
         async function send() {
+            const duration = formData.video ? await getVideoDuration(formData.video) : video?.duration
+
             await mutateAsync({
                 video_id: props.id,
                 ...formData,
                 video: formData.video ? formData.video : undefined,
                 image: formData.image ? formData.image : undefined,
-                duration: 800,
+                duration: duration || 42,
+                playback_rate: formData.playback_rate
             }).then(async (d) => {
                 if (formData.video) {
                     const initDB = async () => {
@@ -126,8 +133,8 @@ export const EditVideoInLibraryForm = (props: { id: string, setOpen: (open: bool
                     await indexedDBService.save_video({
                         id: props.id,
                         blob: formData.video,
-                        checksum: 'NEW CHECKSUM' }
-                    );
+                        checksum: 'NEW CHECKSUM' + Date.now()
+                    });
                 }
             });
         }
@@ -165,12 +172,31 @@ export const EditVideoInLibraryForm = (props: { id: string, setOpen: (open: bool
                         name="video"
                         render={({ field: { value, onChange, ...fieldProps } }) => (
                             <FormItem className='w-full p-2'>
-                                <FormLabel>Видео</FormLabel>
+                                <div className="flex items-center justify-between">
+                                    <FormLabel>Видео</FormLabel>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            className='w-5 h-5 border-zinc-300'
+                                            id="slow-motion"
+                                            checked={slowMotion}
+                                            onCheckedChange={(checked) => {
+                                                setSlowMotion(checked === true);
+                                                form.setValue('playback_rate', checked === true ? 0.5 : 1);
+                                            }}
+                                        />
+                                        <label
+                                            htmlFor="slow-motion"
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                        >
+                                            0.5x
+                                        </label>
+                                    </div>
+                                </div>
                                 <FormControl>
                                     <div>
                                         <FileUploader type='video' fieldProps={fieldProps} onChange={onChange}>
                                             {value ?
-                                                <MediaRender file={value} type="video" videoRef={videoRef} /> :
+                                                <MediaRender file={value} type="video" videoRef={videoRef}/> :
                                                 <MediaRender
                                                     src={src}
                                                     type="video"
@@ -181,7 +207,8 @@ export const EditVideoInLibraryForm = (props: { id: string, setOpen: (open: bool
 
                                         <div className="flex gap-2 justify-center mt-2">
                                             <Button type='button' className='w-8 h-8' onClick={handlePlayPause}>
-                                                {isPlaying ? <FaPause className='w-3 h-3'/> : <FaPlay className='w-3 h-3'/>}
+                                                {isPlaying ? <FaPause className='w-3 h-3'/> :
+                                                    <FaPlay className='w-3 h-3'/>}
                                             </Button>
 
                                             <Slider

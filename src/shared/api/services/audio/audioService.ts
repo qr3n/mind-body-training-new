@@ -1,5 +1,5 @@
 import { api, queryClient }  from "@/shared/api/api";
-import { IAvailableAudio }   from "./types";
+import { IAvailableAudio, IAvailablePhrase } from "./types";
 import { objectToFormData }  from "@/shared/api/utils";
 import toast                 from "react-hot-toast";
 import { calculateMediaDuration } from "@/shared/api/services/audio/utils";
@@ -10,6 +10,32 @@ class AudioService {
         const data = await api.get<IAvailableAudio[]>('/content/library/audio')
 
         return data.data
+    }
+
+    async getPhrases() {
+        const data = await api.get<IAvailablePhrase[]>('/content/phrase')
+
+        return data.data
+    }
+
+    async addToPhrases(data: { audio_id: string }) {
+        queryClient.setQueryData(['phrases'], (old: IAvailablePhrase[]) => [...old, { id: Date.now().toString(), audio_id: data.audio_id }])
+
+        return await toast.promise(api.post(`/content/phrase`, data), {
+            loading: `Добавляем аудио в фразы`,
+            success: `Аудио добавлено в фразы!`,
+            error: `Что-то пошло не так...`
+        })
+    }
+
+    async deleteFromPhrases(data: { phrase_id: string }) {
+        queryClient.setQueryData(['phrases'], (old: IAvailablePhrase[]) => old.filter(o => o.id !== data.phrase_id))
+
+        return await toast.promise(api.delete(`/content/phrase`, { data: data }), {
+            loading: `Удаляем аудио из фраз`,
+            success: `Аудио удалено из фраз.`,
+            error: `Что-то пошло не так...`
+        })
     }
 
     async deleteFromLibrary(data: { id: string }) {

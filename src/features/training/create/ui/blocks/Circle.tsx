@@ -17,7 +17,7 @@ export const Circle = (props: DraggableChildProps) => {
             {...props}
             header={
             <div className='flex gap-4 ml-6 items-center'>
-                <CreateTrainingTemplates.AddBlocks blocksTypes={['secondLevelCircle']} parentId={props.id} level={'second'}/>
+                <CreateTrainingTemplates.AddBlocks blockName={'CIRCLE'} blocksTypes={['secondLevelCircle']} parentId={props.id} level={'second'}/>
                 <h1>КРУГОВ <span
                     className='font-semibold text-blue-500 text-2xl ml-1.5'>{childIds.length}</span></h1>
             </div>

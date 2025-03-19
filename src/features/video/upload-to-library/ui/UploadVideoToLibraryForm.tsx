@@ -55,6 +55,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { Slider } from "@/shared/shadcn/ui/slider";
 import { FaPause } from "react-icons/fa6";
 import { FaPlay } from "react-icons/fa";
+import { Checkbox } from "@/shared/shadcn/ui/checkbox";
+import { getVideoDuration } from "@/shared/utils/getVideoDuraton";
 
 
 export function UploadVideoToLibraryForm(props: { setOpen: (open: boolean) => void }) {
@@ -62,6 +64,7 @@ export function UploadVideoToLibraryForm(props: { setOpen: (open: boolean) => vo
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [slowMotion, setSlowMotion] = useState(false);
 
     useEffect(() => {
         const updateProgress = () => {
@@ -110,12 +113,14 @@ export function UploadVideoToLibraryForm(props: { setOpen: (open: boolean) => vo
             muscles_group: [],
             equipment: [],
             gender: videoGenders[0],
+            playback_rate: 1
         },
     });
 
     function onSubmit(data: z.infer<typeof UploadVideoFormSchema>) {
         setIsFetching(true)
-        mutate({...data, duration: 800});
+        data.playback_rate = slowMotion ? 0.5 : 1;
+        if (data.video) getVideoDuration(data.video).then(r => mutate({...data, duration: r}));
         props.setOpen(false)
     }
 
@@ -129,7 +134,26 @@ export function UploadVideoToLibraryForm(props: { setOpen: (open: boolean) => vo
                         name="video"
                         render={({ field: { value, onChange, ...fieldProps } }) => (
                             <FormItem className='w-full p-2'>
-                                <FormLabel>Видео</FormLabel>
+                                <div className="flex items-center justify-between">
+                                    <FormLabel>Видео</FormLabel>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            className='w-5 h-5 border-zinc-300'
+                                            id="slow-motion"
+                                            checked={slowMotion}
+                                            onCheckedChange={(checked) => {
+                                                setSlowMotion(checked === true);
+                                                form.setValue('playback_rate', checked === true ? 0.5 : 1);
+                                            }}
+                                        />
+                                        <label
+                                            htmlFor="slow-motion"
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                        >
+                                            0.5x
+                                        </label>
+                                    </div>
+                                </div>
                                 <FormControl>
                                     <div>
                                         <FileUploader type='video' fieldProps={fieldProps} onChange={onChange}>

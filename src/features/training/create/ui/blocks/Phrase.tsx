@@ -8,6 +8,9 @@ import {
     createTrainingSecondLevelBlocksAtomFamily,
     createTrainingThirdLevelBlocksAtomFamily
 } from "@/features/training/create/model";
+import { Button } from "@/shared/shadcn/ui/button";
+import { EditIcon, PlusIcon } from "lucide-react";
+import { ChangePhraselist } from "@/features/phrase/change/ChangePhraselist";
 
 export const Phrase = (props: DraggableChildProps) => {
     const block = useAtomValue(
@@ -25,7 +28,7 @@ export const Phrase = (props: DraggableChildProps) => {
             label={'PHRASE'}
             {...props}
         >
-            <CreateTrainingTemplates.BlockSounds id={props.id}/>
+            <ChangePhraselist/>
         </Block>
     );
 };

@@ -1,8 +1,8 @@
 'use client';
 
 import { WatchTrainingBlocks } from "@/features/training/watch/ui/blocks";
-import { FC, useCallback, useEffect, useMemo, useState } from "react";
-import { ITrainingBlockWithContent, ITrainingAudio, ITrainingVideo, ITraining } from "@/entities/training";
+import { FC, useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { ITrainingBlockWithContent, ITrainingAudio, ITrainingVideo, ITraining,  } from "@/entities/training";
 import { useAtom } from "jotai/index";
 import {
     watchTrainingStep,
@@ -10,14 +10,18 @@ import {
     watchTrainingAudiosBlobs,
     watchTrainingMusicVolume,
     watchTrainingSpeakerVolume,
-    watchTrainingPlaying,
-    watchTrainingMusicPlaying,
-    resetAllBlockIndex
+    resetAllBlockIndex, watchTrainingRepsQty, setWatchTrainingVideosBlobsNew
 } from "@/features/training/watch/model";
 import { AnimatePresence } from "framer-motion";
 import { IndexedDBService } from "@/shared/indexed-db";
 import { BackgroundAudio } from "./BackgroundAudio";
-import { useAtomValue, useSetAtom } from "jotai";
+import {  useSetAtom } from "jotai";
+import { useQuery } from "@tanstack/react-query";
+import { audioService, IAvailablePhrase } from "@/shared/api/services/audio";
+import { useAudios } from "@/entities/audio";
+import { API_URL } from "@/shared/api/config";
+import { transformTrainingBlocks } from "./model/transformBlocks";
+import {  usePathname } from "next/navigation";
 
 const blockComponents: Record<any, FC<any>> = {
     warmup: WatchTrainingBlocks.Warmup,
@@ -39,72 +43,6 @@ interface IProps {
     training: ITraining,
 }
 
-function transformTrainingBlocks(blocks: ITrainingBlockWithContent[]): ITrainingBlockWithContent[] {
-    // Создаем копию исходного массива, чтобы не мутировать оригинал
-    const original = [...blocks];
-
-    // Извлекаем блок "greetings", если он есть
-    const greetingsIndex = original.findIndex(b => b.type === 'greeting');
-    let greetingsBlock: ITrainingBlockWithContent | undefined;
-    if (greetingsIndex !== -1) {
-        greetingsBlock = original.splice(greetingsIndex, 1)[0];
-    }
-
-    // Находим блоки "circle" и "split"
-    const circleBlock = original.find(b => b.type === 'circle');
-    const splitBlock = original.find(b => b.type === 'split');
-
-    // if (circleBlock) {
-    //     const lapsQtyAudios = circleBlock.lapsQtyAudios || [];
-    //
-    //     circleBlock.audios = [...(circleBlock.audios || []), ...lapsQtyAudios];
-    //
-    //     delete circleBlock.lapsQtyAudios;
-    // }
-    //
-    // if (splitBlock) {
-    //     const repsQtyAudios = splitBlock.repsQtyAudios || [];
-    //     splitBlock.audios = [...(splitBlock.audios || []), ...repsQtyAudios];
-    //
-    //     delete splitBlock.repsQtyAudios; // Удаляем repsQtyAudios, так как они перенесены
-    // }
-
-    // Собираем результирующий массив
-    const result: ITrainingBlockWithContent[] = [];
-
-    // Добавляем "greetings" первым, если он существует
-    if (greetingsBlock) {
-        result.push(greetingsBlock);
-    }
-
-    // Добавляем "lapsQty" после "greetings", если есть "circle"
-    if (circleBlock) {
-        const lapsQtyBlock: ITrainingBlockWithContent = {
-            type: 'lapsQty',
-            videos: [],
-            audios: [],
-            circlesTimes: circleBlock.content?.map(c =>
-                c?.content?.reduce((sum, d) => sum + (d.slideDuration ?? 0), 0) ?? 0
-            )
-        };
-        result.push(lapsQtyBlock);
-    }
-
-    if (splitBlock) {
-        const repsQtyBlock: ITrainingBlockWithContent = {
-            type: 'repsQty',
-            videos: [],
-            audios: [],
-        };
-        result.push(repsQtyBlock);
-    }
-
-    // Добавляем все оставшиеся блоки из исходного массива (без greetings)
-    result.push(...original);
-
-    return result;
-}
-
 const extractVideosAndAudios = (blocks: ITrainingBlockWithContent[]):
     {
         videos: ITrainingVideo[],
@@ -123,12 +61,12 @@ const extractVideosAndAudios = (blocks: ITrainingBlockWithContent[]):
         if ('ending' in block) {
             audios = [...audios, ...block.ending!];
         }
-        // if ('repsQtyAudios' in block) {
-        //     audios = [...audios, ...block.ending!];
-        // }
-        // if ('lapsQtyAudios' in block) {
-        //     audios = [...audios, ...block.ending!];
-        // }
+        if ('repsQtyAudios' in block) {
+            audios = [...audios, ...block.repsQtyAudios!];
+        }
+        if ('lapsQtyAudios' in block) {
+            audios = [...audios, ...block.lapsQtyAudios!];
+        }
 
         if ('content' in block) {
             const { videos: innerVideos, audios: innerAudios } = extractVideosAndAudios(block.content || []);
@@ -148,59 +86,155 @@ export const WatchTraining = (props: IProps) => {
     const [allAudiosBlobs, setAllAudiosBlobs] = useAtom(watchTrainingAudiosBlobs);
     const setMusicVolume = useSetAtom(watchTrainingMusicVolume)
     const setSpeakerVolume = useSetAtom(watchTrainingSpeakerVolume)
-    const isAudioPlaying = useAtomValue(watchTrainingPlaying)
-    const isMusicPlaying = useAtomValue(watchTrainingMusicPlaying)
-    const { videos, audios } = extractVideosAndAudios(props.blocks);
-    const blocks = useMemo(() => transformTrainingBlocks(props.blocks), [])
+    const setVideoBlob = useSetAtom(setWatchTrainingVideosBlobsNew)
+    const isMounted = useRef(true);
+    const contentLoadedRef = useRef(false);
+
+    const setRepsQty = useSetAtom(watchTrainingRepsQty)
+    const { videos, audios } = useMemo(
+        () => extractVideosAndAudios(props.blocks),
+        [props.blocks]
+    );
+
+    const { data: phrases, isLoading: isPhrasesLoading } = useQuery<IAvailablePhrase[]>({
+        queryFn: audioService.getPhrases,
+        queryKey: ['phrases'],
+        retryOnMount: false,
+        refetchOnMount: false
+    });
+
+    const { data: allAudios } = useAudios();
+
+    const blocks = transformTrainingBlocks(props.blocks, phrases, allAudios)
 
     const nextStep = useCallback(() => {
         setCurrentStep(prev => prev < (blocks.length - 1) ? prev + 1 : prev);
     }, [blocks.length, setCurrentStep]);
 
     const prevStep = () => {
-        setCurrentStep(p => p - 1);
+        setCurrentStep(p => p > 0 ? p - 1 : p);
     }
 
     useEffect(() => {
-        console.log(currentStep)
-    }, [currentStep])
-
-    useEffect(() => {
-        console.log('rerender')
-
         setCurrentStep(0)
         resetAllBlockIndexes()
-        setAllVideosBlobs({})
-        setAllAudiosBlobs({})
+
+        return () => {
+            setTimeout(() => {
+                isMounted.current = false;
+                contentLoadedRef.current = false;
+            }, 100);
+        };
     }, [])
 
     useEffect(() => {
-        const loadAllContent = async () => {
+        blocks.forEach(b => {
+            if (b.type === 'split') {
+                setRepsQty(b.repsQtyCount || 3)
+            }
+        })
+    }, [blocks])
 
+    useEffect(() => {
+        if (contentLoadedRef.current) return;
+
+        const downloadFile = async (url: string) => {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ${url}`);
+            }
+            return response.blob();
+        };
+
+        const loadVideo = async (id: string, checksum?: string, isCompressed: boolean = false) => {
+            const videoId = isCompressed ? `${id.replace('compressed_', '')}` : id.replace('compressed_', '');
+            const videoBlob = await downloadFile(isCompressed ? `${API_URL}/content/stream/video/compressed/${videoId}?v=${Date.now().toString()}` : `${API_URL}/content/stream/video/${videoId}?v=${Date.now().toString()}`);
             const indexedDBService = await IndexedDBService.initialize();
 
-            const newAudios = [...audios, ...props.trainingAudio]
+            await indexedDBService.save_video({
+                id: isCompressed ? `compressed_${id.replace('compressed_', '')}` : id.replace('compressed_', ''),
+                blob: videoBlob,
+                checksum,
+                isCompressed
+            });
 
-            // Load videos
+            setVideoBlob({
+                id: id.replace('compressed_', ''),
+                value: URL.createObjectURL(videoBlob)
+            });
+
+            return videoBlob;
+        }
+
+        const loadAllContent = async () => {
+            const array: ITrainingAudio[] = Array.from({ length: 10 }, (_, i) => ({ type: 'audio', id: `${i + 1}-circle` }));
+            const array2: ITrainingAudio[] = Array.from({ length: 7 }, (_, i) => ({ type: 'audio', id: `ПОДХ${i + 1}` }));
+            const array3: ITrainingAudio[] = Array.from({ length: 21 }, (_, i) => ({ type: 'audio', id: `СУ${i + 1}` }));
+            const indexedDBService = await IndexedDBService.initialize();
+
+            const newAudios = [...audios, ...props.trainingAudio, ...array, ...array2, ...array3]
+
             for (const video of videos) {
                 if (video.id && !allVideosBlobs[video.id]) {
-                    const videoBlob = await indexedDBService.get_video(video.id);
-                    if (videoBlob) {
-                        const objectUrl = URL.createObjectURL(videoBlob.blob);
+                    // First try to get the regular video
+                    let videoBlob = await indexedDBService.get_video(video.id);
 
+                    // If regular video doesn't exist, try to get the compressed version
+                    if (!videoBlob) {
+                        const compressedVideoId = `compressed_${video.id}`;
+                        videoBlob = await indexedDBService.get_video(compressedVideoId);
+
+                        if (videoBlob) {
+                            // Add to list of compressed videos to load uncompressed versions later
+                            // Use the compressed video for now
+                            const objectUrl = URL.createObjectURL(videoBlob.blob);
+                            setAllVideosBlobs(prevState => ({
+                                ...prevState,
+                                [video.id]: objectUrl,
+                            }));
+
+                            setVideoBlob({ id: video.id, value: objectUrl });
+
+                            // Start downloading the regular version in the background
+                            loadVideo(video.id, videoBlob.checksum, false);
+                        } else {
+                            // Neither regular nor compressed video found, download compressed first
+                            console.warn(`Neither regular nor compressed video with ID ${video.id} found in IndexedDB. Downloading both.`);
+
+                            try {
+                                // Download compressed version first for faster initial load
+                                const compressedBlob = await loadVideo(video.id, undefined, true);
+
+                                // Use the compressed version immediately
+                                const objectUrl = URL.createObjectURL(compressedBlob);
+                                setAllVideosBlobs(prevState => ({
+                                    ...prevState,
+                                    [video.id]: objectUrl,
+                                }));
+
+                                setVideoBlob({ id: video.id, value: objectUrl });
+
+                                // Then start downloading the regular version in the background
+                                loadVideo(video.id, undefined, false);
+                            } catch (error) {
+                                console.error(`Failed to download compressed video with ID ${video.id}:`, error);
+                            }
+                        }
+                    } else {
+                        // It's a regular uncompressed video
+                        const objectUrl = URL.createObjectURL(videoBlob.blob);
                         setAllVideosBlobs(prevState => ({
                             ...prevState,
                             [video.id]: objectUrl,
                         }));
-                    } else {
-                        console.warn(`Video with ID ${video.id} not found in IndexedDB.`);
+
+                        setVideoBlob({ id: video.id, value: objectUrl });
                     }
                 }
             }
-
             // Load audios
             for (const audio of newAudios) {
-                if (audio.id && !allAudiosBlobs[audio.id]) {
+                if (audio.id && (!allAudiosBlobs[audio.id] || !allAudiosBlobs[audio.id].length)) {
                     const audioBlob = await indexedDBService.get_audio(audio.id);
                     if (audioBlob) {
                         const objectUrl = URL.createObjectURL(audioBlob.blob);
@@ -216,26 +250,31 @@ export const WatchTraining = (props: IProps) => {
             }
         };
 
-        setMusicVolume(props.training.music_volume <= 1 ? props.training.music_volume : 1)
-        setSpeakerVolume(props.training.speaker_volume <= 1 ? props.training.speaker_volume : 1)
-
         loadAllContent().then(() => {
             setContentLoaded(true);
-        }).catch(e => console.log(e));
-    }, [allVideosBlobs, allAudiosBlobs, setAllVideosBlobs, setAllAudiosBlobs, videos, audios]);
+            contentLoadedRef.current = true;
+        });
+    }, [setAllVideosBlobs, setAllAudiosBlobs, videos, audios]);
 
     const Component = blockComponents[blocks[currentStep].type];
 
-    console.log(props.blocks)
-    console.log(blocks)
+    useEffect(() => {
+        setMusicVolume(props.training.music_volume <= 1 ? props.training.music_volume : 1)
+        setSpeakerVolume(props.training.speaker_volume <= 1 ? props.training.speaker_volume : 1)
+    }, [])
+
+    useEffect(() => {
+        setMusicVolume(props.training.music_volume <= 1 ? props.training.music_volume : 1)
+        setSpeakerVolume(props.training.speaker_volume <= 1 ? props.training.speaker_volume : 1)
+    }, [props.training.music_volume, props.training.speaker_volume])
 
     return (
         <div className='watch'>
             {/* Добавляем BackgroundAudio.tsx */}
-            <BackgroundAudio loop={props.training.cycle} audios={props.trainingAudio}  isPlaying={isAudioPlaying && isMusicPlaying} />
+            <BackgroundAudio loop={props.training.cycle} audios={props.trainingAudio} />
 
             <AnimatePresence mode='wait'>
-                {contentLoaded ?
+                {contentLoaded && !isPhrasesLoading ?
                     <Component
                         key={`${blocks[currentStep].type}-${currentStep}`}
                         block={blocks[currentStep]}

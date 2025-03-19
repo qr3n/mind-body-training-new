@@ -10,7 +10,8 @@ export interface IRawAvailableVideo {
     equipment: string,
     videoBlob?: string,
     previewBlob?: string
-    filename: string
+    filename: string,
+    playback_rate: number
 }
 
 export interface IAvailableVideo {
@@ -28,6 +29,7 @@ export interface IAvailableVideo {
     imageBlob?: string,
     filename: string,
     checksum?: string,
+    playback_rate: number
 }
 
 export interface IAddVideoToLibraryRequestData {
@@ -54,5 +56,6 @@ export interface IEditVideoInLibraryRequestData {
     muscles_group: string[]
     description: string,
     duration: number,
-    equipment: string[]
+    equipment: string[],
+    playback_rate: number
 }

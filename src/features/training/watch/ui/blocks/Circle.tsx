@@ -3,7 +3,7 @@ import { WatchTrainingTemplate } from "@/features/training/watch/ui/templates";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCurrentBlockStep }      from "@/features/training/watch/model/useCurrentBlockStep";
 import { Phrase } from "./Phrase";
-import { ITrainingBlockWithContent } from "@/entities/training";
+import { ITrainingAudio, ITrainingBlockWithContent } from "@/entities/training";
 import { getTrainingLabel } from "@/shared/utils/getTrainingLabel";
 import { useAtomValue } from "jotai";
 import { watchTrainingLapsQty } from "@/features/training/watch/model";
@@ -17,25 +17,45 @@ const getCircleLabel = (num: number) => {
     if (num % 10 === 1 && num % 100 !== 11) return "Круг";
     if ([2, 3, 4].includes(num % 10) && ![12, 13, 14].includes(num % 100)) return "Круга";
     return "Кругов";
-  };
+};
 
 
 
 export const Circle = (props: IWatchTrainingBlockProps) => {
     const circlesCountUser = useAtomValue(watchTrainingLapsQty)
     const circlesCount = props.block.content?.length || 0;
+    const array: ITrainingAudio[] = Array.from({ length: 10 }, (_, i) => ({ type: 'audio', id: `${i + 1}-circle` }));
 
     const lastElement = props.block.content!.at(-1)!;
+    const generateNewId = (parentId: string): string => {
+        return Date.now().toString() + parentId;
+    };
+
+    const updateNestedIds = (content: ITrainingBlockWithContent[], parentId: string): ITrainingBlockWithContent[] => {
+        return content.map(item => ({
+            ...item,
+            id: generateNewId(parentId),
+            content: item.content ? updateNestedIds(item.content, generateNewId(parentId)) : []
+        }));
+    };
 
     const circles = circlesCountUser > circlesCount
         ? props.block.content!.concat(
-            Array.from({ length: circlesCountUser - circlesCount }, () => ({
-                ...lastElement,
-                id: Date.now().toString() + props.block.id
-            }))
+            Array.from({ length: circlesCountUser - circlesCount }, () => {
+                const newId = generateNewId(props.block.id || '');
+                return {
+                    ...lastElement,
+                    id: newId,
+                    content: lastElement.content ? updateNestedIds(lastElement.content, newId) : []
+                };
+            })
         )
-        : props.block.content!.slice(0, circlesCountUser); // Обрезаем массив, если нужно
+        : props.block.content!.slice(0, circlesCountUser);
 
+    // Рассчитываем количество упражнений для каждого круга
+    const exercisesPerCircle = circles.map(circle =>
+        circle.content!.filter(block => block.type === 'exercise').length
+    );
 
     const { currentStep, handleNext, handlePrev } = useCurrentBlockStep({...props, block: { ...props.block, content: circles }}, true)
 
@@ -98,7 +118,7 @@ export const Circle = (props: IWatchTrainingBlockProps) => {
                             >
                                 <h1 className='text-white w-full font-medium [font-size:_clamp(5px,6dvh,48px)] -mt-12 max-w-[300px] text-center'>КРУГ {(b.circleNumber || 0) + 1}</h1>
                                 <h1 className='text-white w-full [font-size:_clamp(5px,2.5dvh,20px)] mt-8 max-w-[300px] text-center'>НАЧАЛИ!</h1>
-                                <WatchTrainingTemplate.BlockSounds nextAfterComplete handleNext={handleNext} isPlaying block={b} />
+                                <WatchTrainingTemplate.BlockSounds nextAfterComplete handleNext={handleNext} isPlaying block={{ ...b, audios: [array[(b.circleNumber || 0)]]}} />
                             </WatchTrainingTemplate.BlockText>
                         ) :
                     b.type === 'phrase' ? (
@@ -112,7 +132,7 @@ export const Circle = (props: IWatchTrainingBlockProps) => {
                             handleNext={handleNext}
                             key={b.id || Date.now().toString()}
                             exerciseNumber={b.exerciseNumber}
-                            exercisesCount={(((groupedBlocks || []).length) / circlesCountUser - (circlesCountUser - 1)) + 1}
+                            exercisesCount={exercisesPerCircle[b.circleNumber! - 1]}
                             block={b}
                             type={b.type}
                             circleNumber={b.circleNumber}

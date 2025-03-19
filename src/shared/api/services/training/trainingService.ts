@@ -14,6 +14,11 @@ interface ICreateTrainingRequest {
     rawTraining: string
 }
 
+export interface IUpdateIndexRequest {
+    training_id: string,
+    new_index: number,
+}
+
 interface IRawTraining {
     id: string,
     title: string,
@@ -23,7 +28,8 @@ interface IRawTraining {
     cycle: boolean,
     gender: 'male' | 'female',
     audio: string
-    raw_training_schema: string
+    raw_training_schema: string,
+    index: number
 }
 
 const parseRawTraining = (data: IRawTraining): ITraining => {
@@ -36,7 +42,8 @@ const parseRawTraining = (data: IRawTraining): ITraining => {
         cycle: data.cycle,
         gender: data.gender,
         audio: JSON.parse(data.audio),
-        blocks: JSON.parse(data.raw_training_schema)
+        blocks: JSON.parse(data.raw_training_schema),
+        index: data.index
     }
 }
 
@@ -50,7 +57,13 @@ class TrainingService {
     async getAll(): Promise<ITraining[]> {
         const rawData = await fetchWithJson<IRawTraining[]>(`${API_URL}/trainings?v=${Date.now().toString()}`, 'trainings.all')
 
-        return rawData.map(data => parseRawTraining(data))
+        return rawData.map(data => parseRawTraining(data)).sort((a, b) => a.index - b.index)
+    }
+
+    async deleteTraining(data: { id: string }) {
+        queryClient.setQueryData(['trainings.all'], (trainings: ITraining[]) => trainings.filter(t => t.id !== data.id))
+
+        return await api.delete(`/trainings/${data.id}`)
     }
 
     async create(data: ICreateTrainingRequest) {
@@ -64,6 +77,10 @@ class TrainingService {
             speaker_volume: data.speaker_volume,
             music_volume: data.music_volume
         })
+    }
+
+    async updateIndexes(data: IUpdateIndexRequest[]) {
+        return api.put('/trainings/indexes', data)
     }
 
     async edit(data: ICreateTrainingRequest) {

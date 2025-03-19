@@ -27,7 +27,7 @@ export const EditVideoInLibraryModal = (props: { id: string }) => {
                     <FiEdit className='w-5 h-5' />
                 </Button>
             </DialogTrigger>
-            <DialogContent className='h-[100dvh] sm:h-auto max-w-[650px]'>
+            <DialogContent className='h-[100dvh] sm:h-auto max-w-[650px] overflow-y-auto sm:max-h-[80dvh]'>
                 <DialogHeader>
                     <DialogTitle>Редактировать видео</DialogTitle>
                     <DialogDescription>

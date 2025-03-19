@@ -19,7 +19,7 @@ export const Stretch = (props: DraggableChildProps) => {
             {...props}
         >
             <CreateTrainingTemplates.BlockSounds id={props.id}/>
-            <CreateTrainingTemplates.AddBlocks blocksTypes={['rest', 'exercise', 'phrase']} parentId={props.id} level={'second'}/>
+            <CreateTrainingTemplates.AddBlocks blockName={'STRETCH'} blocksTypes={['rest', 'exercise', 'phrase']} parentId={props.id} level={'second'}/>
             <div className='py-2'/>
 
             <DraggableList

@@ -6,7 +6,9 @@ import { IWatchTrainingBlockProps } from "@/features/training/watch/ui/blocks/ty
 import { useAtom } from "jotai/index";
 import { watchTrainingLapsQty, watchTrainingRepsQty } from "@/features/training/watch/model";
 import { getCirclesLabel, getRepeatsLabel } from "@/shared/utils/getTrainingLabel";
-import { useEffect, useMemo } from "react"; // Добавляем useMemo
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { WatchTrainingTemplate } from "@/features/training/watch/ui/templates/index";
+import { adjustSetCount } from "@/app/trainings/[id]/utils"; // Добавляем useMemo
 
 interface IProps extends IWatchTrainingBlockProps {
     variant: 'reps' | 'laps';
@@ -22,24 +24,52 @@ export const BlockQty = (props: IProps) => {
     const [count, setCount] = useAtom(props.variant === 'reps' ? watchTrainingRepsQty : watchTrainingLapsQty);
     const circlesTimes = props.block.circlesTimes || [];
 
+    const throttleTimerRef = useRef<number | null>(null);
+
+    const throttle = useCallback((callback: () => void) => {
+        if (throttleTimerRef.current === null) {
+            callback();
+            throttleTimerRef.current = window.setTimeout(() => {
+                throttleTimerRef.current = null;
+            }, 700);
+        }
+    }, []);
+
+    const handleNext = useCallback(() => {
+        throttle(props.onComplete);
+    }, [props.onComplete, throttle]);
+
+    const handlePrev = useCallback(() => {
+        if (props.prevStep) throttle(props.prevStep);
+    }, [props.prevStep, throttle]);
+
+
     useEffect(() => {
-        setCount(props.block.circlesTimes?.length || 1)
+        setCount(props.block.repsQtyCount || props.block.circlesTimes?.length || 1)
     }, []);
 
     // Вычисляем totalDuration с использованием useMemo
     const totalDuration = useMemo(() => {
-        const duration = circlesTimes.reduce((a, b) => a + b, 0);
-        if (count > circlesTimes.length) {
-            const lastElement = circlesTimes[circlesTimes.length - 1] || 0;
-            const difference = count - circlesTimes.length;
-            const additionalDuration = difference * lastElement;
-            return duration + additionalDuration;
+        if (props.variant === 'laps') {
+            const duration = circlesTimes.reduce((a, b) => a + b, 0);
+            if (count > circlesTimes.length) {
+                const lastElement = circlesTimes[circlesTimes.length - 1] || 0;
+                const difference = count - circlesTimes.length;
+                const additionalDuration = difference * lastElement;
+                return duration + additionalDuration;
+            }
+            return duration;
         }
-        return duration;
+
+        const increasedSets = adjustSetCount(props.block.setsDurations!, count);
+
+        return increasedSets.reduce((sum, item) =>
+            sum + item.setDurations.reduce((a, b) => a + b, 0), 0);
     }, [count, circlesTimes]);
 
     return (
         <div className='relative w-[100dvw] h-[100dvh] flex items-center justify-center'>
+            <WatchTrainingTemplate.BlockSounds isPlaying block={props.block}/>
             <motion.div
                 initial={{ height: 0 }}
                 animate={{ height: '50%' }}
@@ -102,7 +132,7 @@ export const BlockQty = (props: IProps) => {
                     </h1>
                     <div
                         className='rounded-lg px-[clamp(5px,1.5dvh,24px)] py-[clamp(5px,1dvh,24px)] mt-4 [font-size:_clamp(5px,2dvh,24px)] font-medium bg-white'>
-                        {formatTime(totalDuration)} {/* Используем totalDuration */}
+                        {formatTime(totalDuration + (props.block.allTime || 0))} {/* Используем totalDuration */}
                     </div>
                 </div>
             </motion.div>
@@ -114,10 +144,10 @@ export const BlockQty = (props: IProps) => {
                     exit={{ transform: 'translateY(200px)', transition: { delay: 0.2 } }}
                     transition={{ delay: 0.2 }}
                 >
-                    <Button className='py-6' onClick={props.prevStep}>
+                    <Button className='py-6' onClick={handlePrev}>
                         <IoArrowBack className='text-white' />
                     </Button>
-                    <Button className='w-full sm:w-[400px] py-6' onClick={props.onComplete}>
+                    <Button className='w-full sm:w-[400px] py-6' onClick={handleNext}>
                         ДАЛЕЕ
                     </Button>
                 </motion.div>

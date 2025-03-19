@@ -20,7 +20,7 @@ export const UploadVideoToLibraryModal = () => {
             <DialogTrigger asChild>
                 <Button>Загрузить видео</Button>
             </DialogTrigger>
-            <DialogContent className='h-[100dvh] sm:h-auto max-w-[650px]'>
+            <DialogContent className='h-[100dvh] sm:h-auto max-w-[650px] overflow-y-auto sm:max-h-[80dvh]'>
                 <DialogHeader>
                     <DialogTitle>Загрузить видео</DialogTitle>
                     <DialogDescription>

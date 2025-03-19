@@ -8,12 +8,16 @@ import Image from "next/image";
 import { speakerImg } from "@/features/training/watch/ui/assets";
 import { WatchTrainingTemplate } from "@/features/training/watch/ui/templates";
 import { watchTrainingMusicPlaying,  } from "@/features/training/watch/model";
-import { useAtomValue, useSetAtom } from "jotai";
-import { useEffect } from "react";
+import {  useSetAtom } from "jotai";
+import { useEffect, useState } from "react";
+import { FaRepeat } from "react-icons/fa6";
 
 
 export const Phrase = (props: IWatchTrainingBlockProps) => {
     const setIsMusicPlaying = useSetAtom(watchTrainingMusicPlaying)
+    const [reset, setReset] = useState(Date.now().toString())
+
+    console.log(props.block.audios, 'PHRASE AUDIOS')
 
     useEffect(() => {
         setIsMusicPlaying(false)
@@ -21,7 +25,7 @@ export const Phrase = (props: IWatchTrainingBlockProps) => {
 
     return (
         <div className='relative w-[100dvw] h-[100dvh] flex items-center justify-center'>
-            <WatchTrainingTemplate.BlockSounds  isPlaying block={props.block}/>
+            <WatchTrainingTemplate.BlockSounds key={reset} isPlaying block={props.block}/>
             <motion.div
                 initial={{height: 0}}
                 animate={{height: '50%'}}
@@ -95,6 +99,12 @@ export const Phrase = (props: IWatchTrainingBlockProps) => {
                         setIsMusicPlaying(true)
                     }} className='py-6' >
                         <IoArrowBack className='text-white'/>
+                    </Button>
+                    <Button
+                        onClick={() => setReset(Date.now().toString())}
+                        className='fixed left-1/2 bg-transparent shadow-none hover:bg-transparent bottom-[clamp(1rem,8vh,4rem)] -translate-x-1/2  rounded-full w-[clamp(2rem,6vh,2.8rem)] h-[clamp(2rem,6vh,2.8rem)]'
+                    >
+                        <FaRepeat className='text-[#333232]'/>
                     </Button>
                     <Button className='w-full sm:w-[400px] py-6' onClick={() => {
                         props.onComplete()

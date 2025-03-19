@@ -1,19 +1,27 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { ITrainingAudio } from "@/entities/training";
 import { useAtomValue } from "jotai";
-import { watchTrainingAudiosBlobs, watchTrainingMusicVolume } from "@/features/training/watch/model";
+import {
+    watchTrainingAudiosBlobs, watchTrainingMusicPlaying,
+    watchTrainingMusicVolume,
+    watchTrainingPlaying
+} from "@/features/training/watch/model";
 
 interface BackgroundAudioProps {
     audios: ITrainingAudio[];
-    isPlaying?: boolean;
     loop?: boolean;
 }
 
-export const BackgroundAudio: React.FC<BackgroundAudioProps> = ({ audios, isPlaying = true, loop = false }) => {
+export const BackgroundAudio: React.FC<BackgroundAudioProps> = ({ audios, loop = false }) => {
+    const isAudioPlaying = useAtomValue(watchTrainingPlaying)
+    const isMusicPlaying = useAtomValue(watchTrainingMusicPlaying)
+
+    const isPlaying = isAudioPlaying && isMusicPlaying
+
     const volume = useAtomValue(watchTrainingMusicVolume);
     const audiosBlobs = useAtomValue(watchTrainingAudiosBlobs);
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const [currentIndex, setCurrentIndex] = useState(0);
+    const currentIndexRef = useRef(0);
 
     useEffect(() => {
         if (audioRef.current) {
@@ -26,34 +34,49 @@ export const BackgroundAudio: React.FC<BackgroundAudioProps> = ({ audios, isPlay
         if (!audio || audios.length === 0) return;
 
         const playAudio = () => {
-            const audioBlob = audiosBlobs[audios[currentIndex]?.id];
+            const audioBlob = audiosBlobs[audios[currentIndexRef.current]?.id];
             if (!audioBlob) return;
 
+            // Use loadeddata event to play audio after it's loaded
+            const playWhenReady = () => {
+                if (isPlaying) {
+                    audio.play().catch(error => console.error('Error playing audio:', error));
+                }
+                // Remove event listener after it fires once
+                audio.removeEventListener('loadeddata', playWhenReady);
+            };
+
+            // Add event listener before changing source
+            audio.addEventListener('loadeddata', playWhenReady);
+
+            // Update source
             audio.src = audioBlob;
-            audio.loop = false; // Отключаем loop на уровне отдельного трека
-            if (isPlaying) {
-                audio.play();
-            } else {
-                audio.pause();
+            audio.load();
+        };
+
+        const handleEnded = () => {
+            if (currentIndexRef.current < audios.length - 1) {
+                currentIndexRef.current++;
+                playAudio();
+            } else if (loop) {
+                currentIndexRef.current = 0;
+                playAudio();
             }
         };
 
+        audio.addEventListener('ended', handleEnded);
+
+        // Initialize playback
         playAudio();
 
-        audio.onended = () => {
-            if (currentIndex < audios.length - 1) {
-                setCurrentIndex((prev) => prev + 1);
-            } else if (loop) {
-                setCurrentIndex(0);
-            }
-        };
-
         return () => {
-            audio.onended = null;
+            audio.removeEventListener('ended', handleEnded);
+            // Ensure we remove any potential loadeddata listeners
+            audio.removeEventListener('loadeddata', () => {});
             audio.pause();
-            audio.src = "";
+            audio.src = '';
         };
-    }, [audios, audiosBlobs, isPlaying, currentIndex, loop]);
+    }, [audios, audiosBlobs, isPlaying, loop]);
 
     return <audio ref={audioRef} style={{ display: "none" }} />;
 };

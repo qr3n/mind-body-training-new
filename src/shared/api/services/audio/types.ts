@@ -5,3 +5,8 @@ export interface IAvailableAudio {
     duration: number,
     blob?: string
 }
+
+export interface IAvailablePhrase {
+    id: string
+    audio_id: string
+}

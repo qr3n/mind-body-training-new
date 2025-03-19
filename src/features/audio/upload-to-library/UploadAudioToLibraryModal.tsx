@@ -21,7 +21,7 @@ export const UploadAudioToLibraryModal = () => {
             <DialogTrigger asChild>
                 <Button>Загрузить аудио</Button>
             </DialogTrigger>
-            <DialogContent className='h-[100dvh] sm:h-auto max-w-[650px]'>
+            <DialogContent className='h-[100dvh] sm:h-auto max-w-[650px] overflow-y-auto sm:max-h-[80dvh]'>
                 <DialogHeader>
                     <DialogTitle>Загрузить аудио</DialogTitle>
                     <DialogDescription>

@@ -79,7 +79,7 @@ export const CreateTrainingAddVideoModal = (props: { blockId: string }) => {
                     Добавить видео
                 </Button>
             </DialogTrigger>
-            <DialogContent className='overflow-hidden flex group justify-start flex-col h-[100dvh] sm:h-[80dvh] max-w-[950px]'>
+            <DialogContent className='overflow-hidden flex group justify-start flex-col h-[100dvh] sm:h-[98dvh] max-w-[950px]'>
                 <DialogHeader>
                     <DialogTitle>{!videosNotFound && 'Добавить видео'}</DialogTitle>
                     <DialogDescription>
@@ -220,9 +220,13 @@ export const CreateTrainingAddVideoModal = (props: { blockId: string }) => {
                                             <h1 className='font-semibold'>{video.name}</h1>
                                             <p className='text-xs text-[#555] mt-0.5'>{video.filename}</p>
                                         </div>
-                                        <div className='flex z-50 gap-1'>
-                                            <DeleteVideoFromLibrary id={video.id}/>
-                                            <EditVideoInLibraryModal id={video.id}/>
+                                        <div className='flex flex-col items-end justify-end'>
+                                            <h1 className='text-sm ml-2 px-2 mt-1 bg-zinc-200 rounded-sm w-max'>{video.category === 'Упражнения' ? 'Упр' : 'Прев'}</h1>
+                                            <div className='flex z-50 gap-1 mt-2'>
+
+                                                <DeleteVideoFromLibrary id={video.id}/>
+                                                <EditVideoInLibraryModal id={video.id}/>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

@@ -18,7 +18,6 @@ import { AnimatedCheckbox } from "@/shared/ui/animated-checkbox";
 import React, { useCallback, useState } from "react";
 import { RiDeleteBinLine } from "react-icons/ri";
 import { useAtom } from "jotai/index";
-import { watchedVideosAtom } from "@/features/training/watch/model";
 
 const RenderVideosContent = (props: { id: string, isPlaying: boolean, onVideoEnd: () => void }) => {
     const videos = useAtomValue(blockVideosAtomFamily(props.id));
@@ -31,6 +30,7 @@ const RenderVideosContent = (props: { id: string, isPlaying: boolean, onVideoEnd
                     key={video.id + i}
                     className="">
                     <CanvasVideoPlayer
+                        smallSize
                         key={data?.find(a => a.id === video.id)?.previewBlob}
                         width={200}
                         src={
@@ -69,6 +69,8 @@ const RenderVideosText = (props: { id: string }) => {
                             <p className='text-xs text-[#555] mt-0.5'>
                                 {data?.find(a => a.id === video.id)?.filename}
                             </p>
+                            <p className='text-sm px-2 mt-2 bg-zinc-200 rounded-sm w-max'>{data?.find(a => a.id === video.id)?.category === 'Упражнения' ? 'Упр' : 'Прев'}</p>
+
                         </div>
                         <div className='break-words max-w-[400px] rounded-2xl text-wrap'>
                             <p className='text-gray-600 whitespace-pre-wrap text-wrap text-sm'>

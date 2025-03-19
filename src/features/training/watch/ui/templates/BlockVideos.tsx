@@ -8,7 +8,8 @@ import {
     watchedVideosAtom,
     watchTrainingMusicVolume, watchTrainingPlaying,
     watchTrainingSpeakerVolume,
-    watchTrainingVideosBlobs
+    watchTrainingVideosBlobs,
+    watchTrainingVideosBlobsNew
 } from "@/features/training/watch/model";
 import { Button }                     from "@/shared/shadcn/ui/button";
 import { ArrowLeft }                  from "lucide-react";
@@ -38,8 +39,11 @@ interface IProps {
     exercisesCount?: number,
     circleNumber?: number
     circlesCount?: number,
+    isSplit?: boolean,
+    isAscet?: boolean,
     videoMuted?: boolean,
     playDuration?: number;
+
 }
 
 const colorsMap = [
@@ -51,14 +55,30 @@ const colorsMap = [
     '#001b49',
 ]
 
-const TimerMobile = ({ timeLeft, duration, type }: { timeLeft: number; duration: number, type: ITrainingBlockWithContent['type'] }) => {
+const TimerMobile = ({
+                         timeLeft,
+                         duration,
+                         type,
+                         useFormattedTime = false
+                     }: {
+    timeLeft: number;
+    duration: number;
+    type: ITrainingBlockWithContent['type'];
+    useFormattedTime?: boolean
+}) => {
     const [scale, setScale] = useState(1);
 
     useEffect(() => {
         const updateScale = () => {
             const height = window.innerHeight;
             const width = window.innerWidth;
-            const newScale = width <= 768 ? Math.min(height / 800, 1.2) : 1;
+            let newScale = width <= 768 ? Math.min(height / 800, 1.2) : 1;
+
+            // Уменьшаем масштаб на 1.5 при высоте < 768px
+            if (height < 768 || width <= 360) {
+                newScale /= 1.5;
+            }
+
             setScale(newScale);
         };
 
@@ -79,12 +99,31 @@ const TimerMobile = ({ timeLeft, duration, type }: { timeLeft: number; duration:
 
     const totalLines = 60;
 
+    // Функция для форматирования времени в ЧЧ:ММ:СС или просто секунды
+    const formatTime = (seconds: number): string => {
+        if (!useFormattedTime) {
+            return seconds > 0 ? seconds.toString() : '0';
+        }
+
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = seconds % 60;
+
+        if (hours > 0) {
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        } else if (minutes > 0) {
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        } else {
+            return `00:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+    };
+
     return (
         <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             exit={{ scale: 0 }}
-            className="sm:mt-[clamp(0px,12dvh,400px)] flex justify-center"
+            className="-mt-[clamp(4px,2.5dvh,32px)] md-h:-mt-[clamp(16px,20dvh,96px)] flex justify-center"
             style={{ transform: `scale(${scale})` }}
         >
             <motion.div className="relative flex items-center justify-center w-[clamp(8rem,10vw,10rem)] h-[clamp(8rem,10vw,10rem)] sm:w-32 sm:h-32">
@@ -130,9 +169,9 @@ const TimerMobile = ({ timeLeft, duration, type }: { timeLeft: number; duration:
                     />
                 </svg>
 
-                <div className="[font-size:_clamp(0.3em,5dvh,3em)] font-bold text-gray-800 transition-transform duration-300 transform">
+                <div className={`${useFormattedTime ? '[font-size:_clamp(0.3em,3dvh,3em)]' : '[font-size:_clamp(0.3em,5dvh,3em)]'} font-bold text-gray-800 transition-transform duration-300 transform`}>
                     <span key={timeLeft} className="inline-block animate-scale">
-                        {timeLeft > 0 ? timeLeft : 0}
+                        {formatTime(timeLeft > 0 ? timeLeft : 0)}
                     </span>
                 </div>
             </motion.div>
@@ -140,8 +179,17 @@ const TimerMobile = ({ timeLeft, duration, type }: { timeLeft: number; duration:
     );
 };
 
-
-const Timer = ({ timeLeft, duration, type }: { timeLeft: number; duration: number, type: ITrainingBlockWithContent['type'] }) => {
+const Timer = ({
+                   timeLeft,
+                   duration,
+                   type,
+                   useFormattedTime = false
+               }: {
+    timeLeft: number;
+    duration: number;
+    type: ITrainingBlockWithContent['type'];
+    useFormattedTime?: boolean
+}) => {
     const [scale, setScale] = useState(1);
 
     useEffect(() => {
@@ -167,6 +215,25 @@ const Timer = ({ timeLeft, duration, type }: { timeLeft: number; duration: numbe
     };
 
     const totalLines = 60;
+
+    // Функция для форматирования времени в ЧЧ:ММ:СС или просто секунды
+    const formatTime = (seconds: number): string => {
+        if (!useFormattedTime) {
+            return seconds > 0 ? seconds.toString() : '0';
+        }
+
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = seconds % 60;
+
+        if (hours > 0) {
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        } else if (minutes > 0) {
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        } else {
+            return `00:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+    };
 
     return (
         <motion.div
@@ -225,9 +292,9 @@ const Timer = ({ timeLeft, duration, type }: { timeLeft: number; duration: numbe
                 </svg>
 
                 {/* Timer value */}
-                <div className="[font-size:_clamp(0.2em,4dvh,2.7em)] font-bold text-gray-800 transition-transform duration-300 transform">
+                <div className={`${useFormattedTime ? 'text-xl' : '[font-size:_clamp(0.2em,4dvh,2.7em)]'} font-bold text-gray-800 transition-transform duration-300 transform`}>
                     <span key={timeLeft} className="inline-block animate-scale">
-                        {timeLeft > 0 ? timeLeft : 0}
+                        {formatTime(timeLeft > 0 ? timeLeft : 0)}
                     </span>
                 </div>
             </motion.div>
@@ -255,17 +322,37 @@ export const BlockVideos = (props: IProps) => {
     const [reset, setReset] = useState(Date.now().toString())
     const { data: allVideos } = useVideos()
     const [duration] = useState(props.block.slideDuration || 0)
-    const videoBlobs = useAtomValue(watchTrainingVideosBlobs);
     const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
     const [time, setTime] = useState<undefined | number>(props.block.slideDuration || 0)
     const videos = useMemo(() => props.block.videos || [], [props.block.videos])
-    const videoSources = videos.map(video => videoBlobs[video.id]).filter(Boolean);
+
+    // Получаем блоб только для текущего видео
+    const currentVideoId = videos[currentVideoIndex]?.id;
+    const currentVideoBlob = useAtomValue(watchTrainingVideosBlobsNew(currentVideoId));
+
     const [playing, setPlaying] = useAtom(watchTrainingPlaying)
 
     const currentVideo = useMemo(() => allVideos?.find(v => v.id === videos[currentVideoIndex].id), [allVideos, currentVideoIndex, videos])
     const [hasCalledNext, setHasCalledNext] = useState(false);
     const [volume, setVolume] = useAtom(watchTrainingSpeakerVolume)
     const [musicVolume, setMusicVolume] = useAtom(watchTrainingMusicVolume)
+    // Определяем, нужно ли зацикливать видео
+    const shouldLoopVideo = useMemo(() => {
+        return props.playDuration !== undefined;
+    }, [props.playDuration]);
+
+    // Остальной код остается без изменений до обработчиков...
+
+    const handleVideoEnd = useCallback(() => {
+        if (!shouldLoopVideo) {
+            if (currentVideoIndex < videos.length - 1) {
+                setCurrentVideoIndex(prev => prev + 1);
+            } else {
+                setWatchedVideos(prev => [...prev, `${props.block.id}${props.exerciseNumber}`]);
+                props.handleNext();
+            }
+        }
+    }, [shouldLoopVideo, currentVideoIndex, videos.length]);
 
     useEffect(() => {
         return () => setPlaying(true)
@@ -279,13 +366,19 @@ export const BlockVideos = (props: IProps) => {
         if (props.playDuration !== undefined && playing) {
             intervalRef.current = setInterval(() => {
                 setTotalPlayedTime(prev => {
-                    if (prev + 1 >= props.playDuration!) {
+                    const currentIsSlowMotion = currentVideo?.playback_rate === 0.5;
+                    const timerDuration = props.playDuration !== undefined
+                        ? props.playDuration * (1)
+                        : (duration || 0) * (1);
+
+                    const newTime = prev + 1;
+                    if (newTime >= timerDuration) {
                         clearInterval(intervalRef.current!);
                         props.handleNext();
-                        setWatchedVideos(prev => [...prev, props.block.id!]);
+                        setWatchedVideos(prev => [...prev, `${props.block.id}${props.exerciseNumber}`]);
                         return 0;
                     }
-                    return prev + 1;
+                    return newTime;
                 });
             }, 1000);
         }
@@ -293,51 +386,34 @@ export const BlockVideos = (props: IProps) => {
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [playing, props.playDuration]);
-
+    }, [playing, props.playDuration, currentVideo?.playback_rate]);
     // Сброс времени при изменении блока или playDuration
     useEffect(() => {
         setTotalPlayedTime(0);
     }, [props.playDuration, props.block.id]);
 
 
-    const handleVideoEnd = useCallback(() => {
-        if (props.playDuration !== undefined) {
-            // Перезапуск видео через сброс ключа
-            setReset(Date.now().toString());
-        } else {
-            // Стандартная логика
-            if (currentVideoIndex < videoSources.length - 1) {
-                setCurrentVideoIndex(prev => prev + 1);
-            } else {
-                setWatchedVideos(prev => [...prev, props.block.id!]);
-                props.handleNext();
-            }
-        }
-    }, [props.playDuration, currentVideoIndex, videoSources.length]);
-
-    // Расчет времени для таймера
-    const timerTimeLeft = props.playDuration !== undefined
-        ? Math.max(props.playDuration - totalPlayedTime, 0)
-        : (time || 0);
-
     const timerDuration = props.playDuration !== undefined
-        ? props.playDuration
-        : (duration || 0);
+        ? props.playDuration * (1)
+        : (duration || 0) * (1);
 
+
+    // Корректируем оставшееся время для случаев без playDuration
+    const timerTimeLeft = props.playDuration !== undefined
+        ? Math.max(timerDuration - totalPlayedTime, 0)
+        : (time !== undefined ? Math.max(time, 0) : 0);
 
     useEffect(() => {
         if (!props.playDuration && time && time < 0 && !hasCalledNext) {
             props.handleNext();
-            setWatchedVideos(prev => [...prev, props.block.id!]);
+            setWatchedVideos(prev => [...prev, `${props.block.id}${props.exerciseNumber}`]);
             setHasCalledNext(true);
         }
-    }, [time, props, hasCalledNext, props.playDuration]);
-
+    }, [time, props.block, props.exerciseNumber, props.handleNext, hasCalledNext, props.playDuration]);
 
     const handleNextClick = useCallback(() => {
-        if (watchedVideos.includes(props.block.id!)) {
-            if (currentVideoIndex < videoSources.length - 1) {
+        if (watchedVideos.includes(`${props.block.id!}${props.exerciseNumber}`)) {
+            if (currentVideoIndex < videos.length - 1) {
                 setCurrentVideoIndex((prev) => prev + 1);
             } else {
                 props.handleNext();
@@ -346,7 +422,7 @@ export const BlockVideos = (props: IProps) => {
     }, [])
 
     const handlePrevClick = useCallback(() => {
-        if (currentVideoIndex > videoSources.length - 1) {
+        if (currentVideoIndex > videos.length - 1) {
             setCurrentVideoIndex((prev) => prev - 1);
         } else {
             props.handlePrev();
@@ -382,7 +458,7 @@ export const BlockVideos = (props: IProps) => {
                             {props.headerText}
                         </h1>
                         {props.circleNumber && <h1 className='text-right text-white  text-sm'>
-                            Круг {props.circleNumber} / {props.circlesCount}
+                            {props.isSplit ? 'Подход' : 'Круг'} {props.circleNumber} / {props.circlesCount}
                         </h1>}
 
                         {props.renderExerciseNumber && <h1 className='text-white  text-sm'>
@@ -392,7 +468,6 @@ export const BlockVideos = (props: IProps) => {
                 </motion.div>
             </motion.div>
 
-
             <motion.div
                 initial={{height: 0}}
                 animate={{height: '50px'}}
@@ -401,7 +476,7 @@ export const BlockVideos = (props: IProps) => {
                 style={{background: props.type === 'exercise' ? '#4466e2' : '#a8c47c'}}
                 className='flex relative sm:hidden h-max'
             >
-            <motion.div
+                <motion.div
                     initial={{scale: 0}}
                     animate={{scale: 1}}
                     transition={{delay: 0.2}}
@@ -415,11 +490,15 @@ export const BlockVideos = (props: IProps) => {
                         <h1 className='text-white  text-sm'>
                             {props.headerText}
                         </h1>
+                        {props.circleNumber && <h1 className='text-right text-white  text-sm'>
+                            {props.isSplit ? 'Подход' : 'Круг'} {props.circleNumber} / {props.circlesCount}
+                        </h1>}
+
                         {props.renderExerciseNumber && <h1 className='text-white  text-sm'>
-                            Упражнение {currentVideoIndex + 1} / {videoSources.length + 1}
+                            Упражнение {props.exerciseNumber} / {props.exercisesCount}
                         </h1>}
                     </div>
-            </motion.div>
+                </motion.div>
             </motion.div>
 
             <motion.div
@@ -427,23 +506,27 @@ export const BlockVideos = (props: IProps) => {
                 animate={{transform: 'translateX(0) scale(1)'}}
                 exit={{transform: 'translateX(-100dvw) scale(0)', transition: {delay: 0}}}
                 transition={{delay: 0.1}}
-                className='sm:h-[43dvh] sm:-mt-10 max-w-auto aspect-video transform-gpu sm:rounded-2xl relative sm:shadow-xl'
+                className='sm:h-[43dvh] flex items-center justify-center sm:-mt-10 max-w-auto transform-gpu sm:rounded-2xl relative'
             >
-                {videoSources.length > 0 ? (
+                {currentVideoBlob ? (
                     <div>
                         <motion.h1 initial={{scale: 0}} animate={{scale: 1}} exit={{scale: 0}}
                                    style={{background: props.type === 'exercise' ? '#4466e2' : '#a8c47c'}}
                                    className='text-white font-semibold text-center py-3 text-lg'>🔥 {currentVideo?.name}</motion.h1>
                         <CanvasVideoPlayer
+                            slowMotion={currentVideo?.playback_rate !== 1}
+                            autoAspectRatio={props.isAscet}
                             isMuted={props.videoMuted}
                             key={reset + 'video'}
                             width={1000}
-                            src={videoSources[currentVideoIndex]}
+                            src={currentVideoBlob}
                             isPlaying={playing}
+                            loop={shouldLoopVideo}
                             onVideoEnd={handleVideoEnd}
                             onTimeUpdate={(currentTime) => {
-                                if (!props.playDuration && time !== undefined) {
-                                    setTime(duration - currentTime);
+                                if (!props.playDuration) {
+                                    // Remove playback rate adjustment for timer
+                                    setTime((duration || 0) - currentTime);
                                 }
                             }}
                         />
@@ -466,14 +549,14 @@ export const BlockVideos = (props: IProps) => {
                                     {exerciseTypesMap[currentVideo?.exercise_type || 'стд']}
                                 </div>
                                 <div>
-                                    <div className='flex gap-1 '>{
+                                    <div className='flex gap-1 absolute top-[clamp(4px,4dvh,24px)]'>{
                                         currentVideo?.equipment.includes('Эспандер тр.') && currentVideo?.equipment.map((e, i) =>
                                             <div key={e} className='rounded-full w-3 h-3'
                                                  style={{background: colorsMap[i]}}/>)
                                     }
                                     </div>
                                     {currentVideo?.equipment.includes('Эспандер тр.') &&
-                                        <p className='font-semibold'>{currentVideo?.equipment[0]}</p>}
+                                        <p className='font-semibold top-[clamp(4px,2dvh,24px)]'>{currentVideo?.equipment[0]}</p>}
 
                                     <Popover>
                                         <PopoverTrigger
@@ -542,6 +625,7 @@ export const BlockVideos = (props: IProps) => {
             <div className='flex w-full h-[calc(100%-550px)] sm:h-auto sm:mt-4 justify-center items-center'>
                 <div className='hidden sm:block'>
                     <Timer
+                        useFormattedTime={props.isAscet}
                         type={props.type}
                         timeLeft={Math.round(timerTimeLeft)}
                         duration={Math.round(timerDuration)}
@@ -550,6 +634,7 @@ export const BlockVideos = (props: IProps) => {
 
                 <div className='block sm:hidden'>
                     <TimerMobile
+                        useFormattedTime={props.isAscet}
                         type={props.type}
                         timeLeft={Math.round(timerTimeLeft)}
                         duration={Math.round(timerDuration)}
@@ -560,7 +645,7 @@ export const BlockVideos = (props: IProps) => {
                     initial={{scale: 0}}
                     animate={{scale: 1}}
                     exit={{scale: 0}}
-                    className='ml-[clamp(0rem,7dvh,12rem)]  h-[clamp(5rem,18vh,18rem)] sm:h-[clamp(5rem,14vh,14rem)] sm:ml-[clamp(0rem,2.5dvh,6rem)] gap-1 flex-col flex items-center justify-center rounded-xl w-[clamp(1rem,12vh,16em)] bg-zinc-200/50 sm:mt-[clamp(0px,12dvh,400px)]'>
+                    className='-mt-[clamp(4px,2.5dvh,32px)] md-h:-mt-[clamp(16px,20dvh,96px)] sm:md-h:mt-[clamp(0px,12dvh,400px)] sm:mt-[clamp(0px,12dvh,400px)] ml-[clamp(0rem,7dvh,12rem)]  h-[clamp(5rem,18vh,18rem)] sm:h-[clamp(5rem,14vh,14rem)] sm:ml-[clamp(0rem,2.5dvh,6rem)] gap-1 flex-col flex items-center justify-center rounded-xl w-[clamp(1rem,12vh,16em)] bg-zinc-200/50'>
                     <svg xmlns="http://www.w3.org/2000/svg"
                          className=' h-[clamp(40px,11vh,140px)] w-[clamp(30px,7vh,120px)] sm:h-[clamp(40px,10vh,120px)] sm:w-[clamp(30px,6vh,100px)]'
                          viewBox="0 0 49 68" fill="none">
@@ -604,7 +689,7 @@ export const BlockVideos = (props: IProps) => {
                 <Button
                     className='w-[clamp(2rem,6vh,2.8rem)] h-[clamp(2rem,6vh,2.8rem)] p-0 shadow-md bg-[#f9f9fa] hover:bg-[#fff] border border-transparent hover:border-[#ccc]'
                     onClick={handleNextClick}
-                    disabled={(currentVideoIndex >= videoSources.length && videoSources.length > 0) || !watchedVideos.includes(props.block.id!)}
+                    disabled={(currentVideoIndex >= videos.length - 1 || !currentVideoBlob) && !watchedVideos.includes(`${props.block.id!}${props.exerciseNumber}`)}
                 >
                     <GrFormNext className='text-[#333232] w-[clamp(1rem,5vw,2rem)] h-[clamp(1rem,5vh,2rem)]'/>
                 </Button>

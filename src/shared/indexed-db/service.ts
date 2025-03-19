@@ -30,11 +30,11 @@ export class IndexedDBService {
         await tx.done;
     }
 
-    async save_video(data: { id: string; checksum?: string, blob: Blob }) {
+    async save_video(data: { id: string; checksum?: string, blob: Blob, isCompressed?: boolean }) {
         return this.save("videos", data);
     }
 
-    async save_audio(data: { id: string; blob: Blob }) {
+    async save_audio(data: { id: string; checksum?: string, blob: Blob }) {
         return this.save("sounds", data);
     }
 
@@ -46,7 +46,7 @@ export class IndexedDBService {
         return result;
     }
 
-    async get_video(id: string): Promise<{ id: string; blob: Blob } | undefined> {
+    async get_video(id: string): Promise<{ id: string; blob: Blob, checksum?: string } | undefined> {
         return this.get("videos", id);
     }
 
@@ -54,4 +54,3 @@ export class IndexedDBService {
         return this.get("sounds", id);
     }
 }
-

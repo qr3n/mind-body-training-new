@@ -5,8 +5,19 @@ import { IoArrowBackOutline } from "react-icons/io5";
 import { API_URL } from "@/shared/api/config";
 import { IWatchTrainingBlockProps } from "@/features/training/watch/ui/blocks/types";
 import { WatchTrainingTemplate } from "@/features/training/watch/ui/templates";
+import { useEffect } from "react";
+import { useSetAtom } from "jotai/index";
+import { resetAllBlockIndex } from "@/features/training/watch/model";
 
 export const Greetings = (props: IWatchTrainingBlockProps) => {
+    const resetAllBlockIndexes = useSetAtom(resetAllBlockIndex)
+
+    useEffect(() => {
+        resetAllBlockIndexes()
+
+        return () => resetAllBlockIndexes()
+    }, [])
+
     return (
         <div className='relative w-[100dvw] h-[100dvh] flex items-center justify-center flex-col bg-[#f6f7f8]'>
             <WatchTrainingTemplate.BlockSounds nextAfterComplete handleNext={props.onComplete} isPlaying block={props.block} />

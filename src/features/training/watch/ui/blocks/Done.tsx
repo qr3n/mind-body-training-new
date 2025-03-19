@@ -148,7 +148,7 @@ export const Done = (props: IWatchTrainingBlockProps) => {
                         />
                         <div
                             className='rounded-full bg-white border-2 border-blue-500 flex items-center justify-center w-[6.5dvh] h-[6.5dvh] absolute bottom-[1.3dvh] left-[1.3dvh]'>
-                            <h1 className='[font-size:_clamp(0.1em,2dvh,24px)]  text-blue-500 font-bold'>{correctAnswers * 100}</h1>
+                            <h1 className='[font-size:_clamp(0.1em,2dvh,24px)]  text-blue-500 font-bold'>{(correctAnswers > 0 ? correctAnswers : 0) * 100}</h1>
                             <Fire/>
                         </div>
 
@@ -167,7 +167,7 @@ export const Done = (props: IWatchTrainingBlockProps) => {
                             exit={{scale: 0, transition: {delay: 0.1}}}
                             className='border text-center bg-white border-zinc-200 w-full rounded-3xl p-[clamp(2px,3dvh,32px)]'
                         >
-                            <h1 className=' [font-size:_clamp(0.3em,5dvh,3em)] text-blue-500 font-bold'>{correctAnswers * 100}</h1>
+                            <h1 className=' [font-size:_clamp(0.3em,5dvh,3em)] text-blue-500 font-bold'>{(correctAnswers > 0 ? correctAnswers : 0) * 100}</h1>
                             <p className='[font-size:_clamp(0.1em,1.5dvh,24px)]  text-[#282738]'>Вы заработали</p>
                         </motion.div>
 
@@ -181,6 +181,13 @@ export const Done = (props: IWatchTrainingBlockProps) => {
                             <p className='[font-size:_clamp(0.1em,1.5dvh,24px)] text-[#282738]'>Ваше место</p>
                         </motion.div>
                     </div>
+                    <motion.h1
+                        initial={{scale: 0}}
+                        animate={{scale: 1}}
+                        exit={{scale: 0, transition: {delay: 0.1}}}
+                        className='z-50 w-full mix-blend-difference [font-size:_clamp(0.3em,1.7dvh,2em)] max-w-[400px] bg-white pt-4 pb-2 px-2 text-center'>
+                        {correctAnswers > 0 ? `Вы верно ответили на тест и заработали баллы` : `К сожалению, вы не заработали баллов, так как неверно ответили на тест.`}
+                    </motion.h1>
                     <motion.div
                         className='w-full flex mt-4 items-center justify-center gap-2'
                         initial={{transform: 'translateY(200px)'}}

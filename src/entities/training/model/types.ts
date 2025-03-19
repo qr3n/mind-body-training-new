@@ -1,3 +1,5 @@
+import { ExerciseDurations } from "@/app/trainings/[id]/utils"
+
 export type TBlockType =
     'greeting'
     | 'ascet'
@@ -14,11 +16,13 @@ export type TBlockType =
     | 'splitApproach'
     | 'lapsQty'
     | 'repsQty'
+    | 'approachLabel'
 
 export interface ITrainingAudio {
     type: 'audio'
     id: string,
     blob?: string,
+    checksum?: string
 }
 
 export interface ITrainingPause {
@@ -71,8 +75,9 @@ export type IPhrase = ITrainingBlockTemplate<'phrase'>
 export type ISplitApproach = ITrainingBlockTemplate<'splitApproach'>
 export type ILapsQty = ITrainingBlockTemplate<'lapsQty'>
 export type IRepsQty = ITrainingBlockTemplate<'repsQty'>
+export type IApproachLabel = ITrainingBlockTemplate<'approachLabel'>
 
-export type TTrainingBlock = IGreetings | IAscet | ICircle | ISplit | IWarmup | IStretch | ITesting | IDone | ISecondLevelCircle | IRest | IExercise | IPhrase | ISplitApproach | ILapsQty | IRepsQty
+export type TTrainingBlock = IGreetings | IAscet | ICircle | ISplit | IWarmup | IStretch | ITesting | IDone | ISecondLevelCircle | IRest | IExercise | IPhrase | ISplitApproach | ILapsQty | IRepsQty | IApproachLabel
 
 export interface IAnswer {
     text: string;
@@ -96,9 +101,18 @@ export interface ITrainingBlockWithContent {
     cycleVideo?: boolean,
     inputResults?: boolean,
     useVideoAudio?: boolean,
+    allTime?: number,
     repsQtyAudios?: ITrainingAudio[],
     lapsQtyAudios?: ITrainingAudio[],
     circlesTimes?: number[],
+    ascetAudios?: ITrainingAudio[],
+    fromTimePercent?: number,
+    toTimePercent?: number,
+    repsQtyCount?: number,
+    approachNumber?: number,
+    exerciseNumber?: number,
+    exercisesInApproachCount?: number,
+    setsDurations?: ExerciseDurations[]
 }
 
 export interface ITraining {
@@ -110,5 +124,6 @@ export interface ITraining {
     cycle: boolean,
     gender: 'male' | 'female',
     audio: ITrainingAudio[]
-    blocks: ITrainingBlockWithContent[]
+    blocks: ITrainingBlockWithContent[],
+    index: number
 }

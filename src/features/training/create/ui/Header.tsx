@@ -14,7 +14,7 @@ import {
 import { useAtom } from "jotai/index";
 import {
     assembleTrainingBlocksAtom, blockSoundsAtomFamily, cycleTrainingMusic,
-    isSomethingUploadingAtom,
+    isSomethingUploadingAtom, newCreateTrainingAddBlocksMode,
     trainingEquipment
 } from "@/features/training/create/model";
 import { useForm } from "react-hook-form";
@@ -27,8 +27,9 @@ import { AnimatedCheckbox } from "@/shared/ui/animated-checkbox";
 import React, { useEffect } from "react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import Link from "next/link";
+import { Switch } from "@/shared/shadcn/ui/switch";
 
 const FormSchema = z.object({
     title: z.string(),
@@ -76,6 +77,7 @@ export const Header = (props: IProps) => {
     const audios = useAtomValue(blockSoundsAtomFamily('root.audios'))
     const equipment = useAtomValue(trainingEquipment)
     const training = useAtomValue(assembleTrainingBlocksAtom)
+    const setNewMode = useSetAtom(newCreateTrainingAddBlocksMode)
     const { mutateAsync, isPending, isSuccess } = useMutation({
         mutationFn: props.edit ? trainingService.edit : trainingService.create,
         mutationKey: ['trainings.create']
@@ -86,8 +88,8 @@ export const Header = (props: IProps) => {
         defaultValues: {
             title: props.title || 'Название',
             description: props.description || 'Описание',
-            speakerVolume: props.initialSpeakerVolume || 1,
-            musicVolume: props.initialMusicVolume  || 0.7
+            speakerVolume: Number(props.initialSpeakerVolume) || 1,
+            musicVolume: Number(props.initialMusicVolume)  || 0.7
         }
     })
 
@@ -161,6 +163,10 @@ export const Header = (props: IProps) => {
                         </div>
                     </div>
                     <div className='flex items-center gap-4'>
+                        <div className='flex items-center px-3 py-1 gap-3 rounded-full bg-white justify-center'>
+                            <h1 className='text-xs    '>Новый режим</h1>
+                            <Switch defaultChecked onCheckedChange={v => setNewMode(v)}/>
+                        </div>
                         <Button
                             disabled={isPending || isFetching}
                             type='button'
@@ -192,14 +198,16 @@ export const Header = (props: IProps) => {
                             <div className='flex mt-4 gap-8'>
                                 <div className='flex flex-col items-center justify-center'>
                                     <input
+                                        type={'number'}
                                         {...form.register('speakerVolume', { valueAsNumber: true })}
-                                        className='w-10 h-10 bg-blue-500 text-center text-white flex items-center justify-center font-bold rounded-xl'/>
+                                        className='w-10 h-10 no-spinner bg-blue-500 text-center text-white flex items-center justify-center font-bold rounded-xl'/>
                                     <h1 className='text-sm mt-1'>Диктор</h1>
                                 </div>
                                 <div className='flex flex-col items-center justify-center'>
                                     <input
                                         {...form.register('musicVolume', { valueAsNumber: true })}
-                                        className='w-10 h-10 bg-blue-500 text-center text-white flex items-center justify-center font-bold rounded-xl'/>
+                                        type={'number'}
+                                        className='w-10 h-10 no-spinner bg-blue-500 text-center text-white flex items-center justify-center font-bold rounded-xl'/>
                                     <h1 className='text-sm mt-1'>Музыка</h1>
                                 </div>
                             </div>

@@ -80,3 +80,15 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Для WebKit (Chrome, Safari, Edge) */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+/* Для Firefox */
+.no-spinner {
+  -moz-appearance: textfield !important;
+}

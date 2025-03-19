@@ -9,6 +9,7 @@ import {
 } from "@/entities/training";
 import { IAvailableVideo } from "@/shared/api/services/video";
 import { atomFamily } from 'jotai/utils'
+import { IAvailableAudio, IAvailablePhrase } from "@/shared/api/services/audio";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const createTrainingFirstLevelBlocksAtomFamily = atomFamily((_: string) => atom<TTrainingBlock | null>(null));
@@ -19,9 +20,12 @@ export const createTrainingThirdLevelBlocksAtomFamily = atomFamily((_: string) =
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const childBlocksAtomFamily = atomFamily((_: string) => atom<string[]>([]));
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const repsQtyCountAtomFamily = atomFamily((_: string) => atom<number>(3));
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const blockSoundsAtomFamily = atomFamily((_: string) => atom<(ITrainingAudio | ITrainingPause)[]>([]));
 export const blockRepsQtySoundsAtomFamily = atomFamily((_: string) => atom<(ITrainingAudio | ITrainingPause)[]>([]));
 export const blockLapsQtySoundsAtomFamily = atomFamily((_: string) => atom<(ITrainingAudio | ITrainingPause)[]>([]));
+export const newCreateTrainingAddBlocksMode = atom(true)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const blockVideosAtomFamily = atomFamily((_: string) => atom<ITrainingVideo[]>([]));
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -69,7 +73,7 @@ export const getAllNestedChildrenAtom = atom(
 
 export const addCreateTrainingBlock = atom(
     null,
-    (get, set, { level, parentId, newBlock }: { level: 'first' | 'second' | 'third'; parentId?: string; newBlock: TTrainingBlock }) => {
+    (get, set, { level, parentId, newBlock }: { level: 'first' | 'second' | 'third'; parentId?: string; newBlock: TTrainingBlock, allAudios?: IAvailableAudio[], phrases?: IAvailablePhrase[] }) => {
         const id = Date.now().toString();
         const blocks = get(allBlocksIds)
         set(allBlocksIds, [...blocks, id])
@@ -88,7 +92,6 @@ export const addCreateTrainingBlock = atom(
             set(createTrainingThirdLevelBlocksAtomFamily(id), newBlock);
         }
 
-        // Инициализация атомов для аудио и видео
         set(blockSoundsAtomFamily(id), []);
         set(blockVideosAtomFamily(id), []);
     }
@@ -98,8 +101,6 @@ export const addSoundToBlock = atom(
     null,
     (get, set, { blockId, audio }: { blockId: string; audio: ITrainingAudio | ITrainingPause }) => {
 
-        console.log(blockId)
-        console.log('TEST')
         const currentSounds = get(blockSoundsAtomFamily(blockId));
         set(blockSoundsAtomFamily(blockId), [...currentSounds, audio]);
     }
@@ -240,9 +241,6 @@ export const removeCreateTrainingBlock = atom(
     (get, set, { blockId, level, parentId, allVideos }: { blockId: string; level: 'first' | 'second' | 'third'; parentId?: string, allVideos: IAvailableVideo[] }) => {
         const allVideoIds = get(allVideoIdsAtom); // ID всех видео в тренировке
         const allChild = get(getAllNestedChildrenAtom)(blockId); // Все дочерние блоки
-
-        console.log(`🛑 Удаляем блок: ${blockId} (уровень: ${level}, parentId: ${parentId})`);
-        console.log("📌 Дочерние блоки перед удалением:", get(childBlocksAtomFamily(blockId)));        
 
         // Удаление дочерних блоков
         if (parentId) {
@@ -408,6 +406,7 @@ export const assembleTrainingBlocksAtom = atom((get) => {
         const useVideoAudio = get(needUseVideoSoundAtomFamily(blockId))
         const repsSounds = get(blockRepsQtySoundsAtomFamily(blockId))
         const lapsSounds = get(blockLapsQtySoundsAtomFamily(blockId))
+        const repsCount = get(repsQtyCountAtomFamily(blockId))
 
         return {
             ...block,
@@ -426,7 +425,8 @@ export const assembleTrainingBlocksAtom = atom((get) => {
             inputResults,
             useVideoAudio,
             repsQtyAudios: repsSounds,
-            lapsQtyAudios: lapsSounds
+            lapsQtyAudios: lapsSounds,
+            repsQtyCount: repsCount
         };
     };
 
@@ -509,7 +509,7 @@ export const initializeBlocksAtom = atom(
         set(blockSoundsAtomFamily('root.audios'), training.audio)
 
         flatBlocks.forEach((block) => {
-            const { id, parentId, cycleVideo, inputResults, lapsQtyAudios, repsQtyAudios, useVideoAudio, level, videos, ending, audios, title, description, question, imageName, answers, startIn, slideDuration, ...blockData } = block;
+            const { id, parentId, cycleVideo, inputResults, allTime, circlesTimes, ascetAudios, fromTimePercent, toTimePercent, approachNumber, repsQtyCount, lapsQtyAudios, repsQtyAudios, useVideoAudio, level, videos, ending, audios, title, description, question, imageName, answers, startIn, slideDuration, ...blockData } = block;
             
             set(allBlocksIds, [...get(allBlocksIds), id]);
 
@@ -542,6 +542,7 @@ export const initializeBlocksAtom = atom(
             set(needUseVideoSoundAtomFamily(id), !!useVideoAudio)
             set(blockLapsQtySoundsAtomFamily(id), lapsQtyAudios || [])
             set(blockRepsQtySoundsAtomFamily(id), repsQtyAudios || [])
+            set(repsQtyCountAtomFamily(id), repsQtyCount || 3)
 
             if (startIn) set(startInAtomFamily(id), startIn)
             if (slideDuration) set(slideDurationAtomFamily(id), slideDuration)

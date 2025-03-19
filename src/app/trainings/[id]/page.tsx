@@ -17,8 +17,9 @@ const addIdsRecursively = (data: ITrainingBlockWithContent[]): ITrainingBlockWit
 export default async function WatchTrainPage({params}: { params: Promise<{ id: string }> }) {
     const id = (await params).id
     const training = await trainingService.get(id)
-
     const blocks = addIdsRecursively(training.blocks)
+
+    console.log(blocks)
 
     return (
         <div className='w-[100dvw] h-[100dvh] overflow-hidden select-none'>

@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/shared/shadcn/ui/button";
 import { IoArrowBack } from "react-icons/io5";
-import { PropsWithChildren, ReactElement } from "react";
+import { PropsWithChildren, ReactElement, useRef, useCallback } from "react";
 
 interface IProps extends PropsWithChildren {
     text?: string,
@@ -13,6 +13,26 @@ interface IProps extends PropsWithChildren {
 }
 
 export const BlockText = (props: IProps) => {
+    const throttleTimerRef = useRef<number | null>(null);
+
+    const throttle = useCallback((callback: () => void) => {
+        if (throttleTimerRef.current === null) {
+            callback();
+            throttleTimerRef.current = window.setTimeout(() => {
+                throttleTimerRef.current = null;
+            }, 700);
+        }
+    }, []);
+
+    const handleNext = useCallback(() => {
+        throttle(props.handleNext);
+    }, [props.handleNext, throttle]);
+
+    const handlePrev = useCallback(() => {
+        throttle(props.handlePrev);
+    }, [props.handlePrev, throttle]);
+
+
     return (
         <div className='relative w-[100dvw] h-[100dvh] flex items-center justify-center'>
             <motion.div
@@ -47,7 +67,7 @@ export const BlockText = (props: IProps) => {
             <motion.div
                 initial={{scale: 0}}
                 animate={{scale: 1}}
-                exit={{scale: 0, transition: {delay: 0.1}}}
+                exit={{scale: 0, transition: {delay: 0.05}}}
                 transition={{delay: 0.15}}
                 className='
                     flex items-center justify-center w-max h-max
@@ -88,13 +108,13 @@ export const BlockText = (props: IProps) => {
                     className='w-full flex items-center justify-center gap-2'
                     initial={{transform: 'translateY(200px)'}}
                     animate={{transform: 'translateY(0px)'}}
-                    exit={{transform: 'translateY(200px)', transition: {delay: 0.2}}}
+                    exit={{transform: 'translateY(200px)', transition: {delay: 0.1}}}
                     transition={{delay: 0.2}}
                 >
-                    <Button className='py-6' onClick={props.handlePrev}>
+                    <Button className='py-6' onClick={handlePrev}>
                         <IoArrowBack className='text-white'/>
                     </Button>
-                    <Button className='w-full sm:w-[400px] py-6' onClick={props.handleNext}>
+                    <Button className='w-full sm:w-[400px] py-6' onClick={handleNext}>
                         ДАЛЕЕ
                     </Button>
                 </motion.div>

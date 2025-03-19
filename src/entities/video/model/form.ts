@@ -21,6 +21,7 @@ export const UploadVideoFormSchema = z.object({
     equipment: z.array(z.string()).min(1, {
         message: "Выберите хотя бы одно оборудование.",
     }),
+    playback_rate: z.number().min(0.49)
 });
 
 
@@ -41,4 +42,5 @@ export const EditVideoFormSchema = z.object({
     equipment: z.array(z.string()).min(1, {
         message: "Выберите хотя бы одно оборудование.",
     }),
+    playback_rate: z.number().min(0.49)
 });

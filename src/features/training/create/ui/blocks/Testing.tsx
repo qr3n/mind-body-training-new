@@ -60,25 +60,7 @@ export const Testing = (props: DraggableChildProps) => {
 
     return (
         <Block color="white" level="first" label="TESTING" {...props}>
-            <label className="text-sm -mb-2 ">Вопрос</label>
-            <Input
-                className="bg-gray-50 mt-2 rounded-lg max-w-[600px]"
-                type="text"
-                value={questionText}
-                onChange={e => setQuestionText(e.target.value)}
-                placeholder="Какое позитивное утверждение прозвучало в тренироке?"
-            />
-            <Button
-            variant='ghost'
-            onClick={addQuestion}
-                className={`border mt-4 border-transparent hover:border-blue-500 hover:bg-blue-100 flex gap-2 py-5 bg-blue-50`}>
-                <div
-                    className='w-7 h-7 p-0 bg-blue-500 flex items-center justify-center hover:bg-blue-600 rounded-full'>
-                    <PlusIcon className='w-5 h-5 text-white'/>
-                </div>
-                <span>ОТВЕТ</span>
-            </Button>
-            <QuestionList blockId={props.id} />
+
         </Block>
     );
 };

@@ -145,6 +145,7 @@ const RenderSounds = ({
 export const BlockSounds = (props: {
     id: string,
     isEnd?: boolean,
+    isPhrase?: boolean,
     type?: 'sounds' | 'end' | 'laps_qty' | 'reps_qty'
 }) => {
     const type = props.type || 'sounds'
