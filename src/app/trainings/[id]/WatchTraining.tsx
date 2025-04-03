@@ -10,7 +10,7 @@ import {
     watchTrainingAudiosBlobs,
     watchTrainingMusicVolume,
     watchTrainingSpeakerVolume,
-    resetAllBlockIndex, watchTrainingRepsQty, setWatchTrainingVideosBlobsNew
+    resetAllBlockIndex, watchTrainingRepsQty, setWatchTrainingVideosBlobsNew, watchedVideosAtom
 } from "@/features/training/watch/model";
 import { AnimatePresence } from "framer-motion";
 import { IndexedDBService } from "@/shared/indexed-db";
@@ -86,6 +86,7 @@ export const WatchTraining = (props: IProps) => {
     const [allAudiosBlobs, setAllAudiosBlobs] = useAtom(watchTrainingAudiosBlobs);
     const setMusicVolume = useSetAtom(watchTrainingMusicVolume)
     const setSpeakerVolume = useSetAtom(watchTrainingSpeakerVolume)
+    const [watchedVideos, setWatchedVideos] = useAtom(watchedVideosAtom)
     const setVideoBlob = useSetAtom(setWatchTrainingVideosBlobsNew)
     const isMounted = useRef(true);
     const contentLoadedRef = useRef(false);
@@ -116,8 +117,22 @@ export const WatchTraining = (props: IProps) => {
     }
 
     useEffect(() => {
+        // Блокируем ориентацию в портретном режиме, если API доступен
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        if (screen.orientation && screen.orientation.lock) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            screen.orientation.lock('portrait').catch((error) => {
+                console.error('Не удалось заблокировать ориентацию:', error);
+            });
+        }
+    }, []);
+
+    useEffect(() => {
         setCurrentStep(0)
         resetAllBlockIndexes()
+        setWatchedVideos([])
 
         return () => {
             setTimeout(() => {
@@ -172,7 +187,16 @@ export const WatchTraining = (props: IProps) => {
             const array3: ITrainingAudio[] = Array.from({ length: 21 }, (_, i) => ({ type: 'audio', id: `СУ${i + 1}` }));
             const indexedDBService = await IndexedDBService.initialize();
 
-            const newAudios = [...audios, ...props.trainingAudio, ...array, ...array2, ...array3]
+            const newAudios = [
+                ...audios,
+                ...props.trainingAudio,
+                ...array,
+                ...array2,
+                ...array3,
+                {type: 'audio', id: 'listen-phrase'},
+                {type: 'audio', id: 'one-more-time'},
+                {type: 'audio', id: 'remember-this-phrase'},
+            ]
 
             for (const video of videos) {
                 if (video.id && !allVideosBlobs[video.id]) {

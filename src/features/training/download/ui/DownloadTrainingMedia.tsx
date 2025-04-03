@@ -37,6 +37,9 @@ export const DownloadTrainingMedia = (props: { training: ITraining, inAscet?: bo
                 if (!db.objectStoreNames.contains("sounds")) {
                     db.createObjectStore("sounds", { keyPath: "id" });
                 }
+                if (!db.objectStoreNames.contains("images")) {
+                    db.createObjectStore("images", { keyPath: "id" });
+                }
             },
         });
     };
@@ -100,8 +103,9 @@ export const DownloadTrainingMedia = (props: { training: ITraining, inAscet?: bo
 
         try {
             const regularVideoExists = await isFileExists("videos", videos[0].id, data?.find(v => v.id === videos[0].id)?.checksum);
+
             if (!regularVideoExists) {
-                const videoBlob = await downloadFile(`${API_URL}/content/stream/video/compressed/${videos[0].id}?v=${Date.now().toString()}`);
+                const videoBlob = await downloadFile(`${API_URL}/content/stream/video/${videos[0].id}?v=${Date.now().toString()}`);
                 await indexedDBService.save_video({
                     id: videos[0].id,
                     blob: videoBlob,
@@ -128,6 +132,8 @@ export const DownloadTrainingMedia = (props: { training: ITraining, inAscet?: bo
             }
 
             // Для аудио
+            console.log("Starting download of training audios:", audios.map(a => a.id));
+
             for (const audio of audios) {
                 const alreadyExists = await isFileExists("sounds", audio.id, audio.checksum);
                 if (!alreadyExists) {
@@ -140,6 +146,8 @@ export const DownloadTrainingMedia = (props: { training: ITraining, inAscet?: bo
                 }
             }
 
+            console.log("Starting download of numbered audios (1-10)");
+
             for (let i = 1; i <= 10; i++) {
                 const audioId = `${i}-circle`;
                 const alreadyExists = await isFileExists("sounds", audioId);
@@ -148,17 +156,22 @@ export const DownloadTrainingMedia = (props: { training: ITraining, inAscet?: bo
                     await indexedDBService.save_audio({ id: audioId, blob: audioBlob });
                 }
             }
+            console.log("Starting download of phrase audios:", phrases?.map(p => p.audio_id).filter(Boolean));
 
             if (phrases) {
                 for (const phrase of phrases) {
                     const audioId = phrase.audio_id;
-                    const alreadyExists = await isFileExists("sounds", audioId);
-                    if (!alreadyExists) {
-                        const audioBlob = await downloadFile(`${API_URL}/content/stream/audio/${audioId}?v=${Date.now().toString()}`);
-                        await indexedDBService.save_audio({ id: audioId, blob: audioBlob });
+
+                    if (audioId) {
+                        const alreadyExists = await isFileExists("sounds", audioId);
+                        if (!alreadyExists) {
+                            const audioBlob = await downloadFile(`${API_URL}/content/stream/audio/${audioId}?v=${Date.now().toString()}`);
+                            await indexedDBService.save_audio({ id: audioId, blob: audioBlob });
+                        }
                     }
                 }
             }
+            console.log("Starting download of СУ audios (1-21)");
 
             for (let i = 1; i <= 21; i++) {
                 const audioId = `СУ${i}`;
@@ -195,6 +208,18 @@ export const DownloadTrainingMedia = (props: { training: ITraining, inAscet?: bo
             if (!alreadyExists3) {
                 const audioBlob = await downloadFile(`/audios/remember-this-phrase.mp3`);
                 await indexedDBService.save_audio({ id: "remember-this-phrase", blob: audioBlob });
+            }
+
+            // Проверяем наличие изображения cup.png
+            const cupImageExists = await isFileExists("images", "cup");
+            if (!cupImageExists) {
+                const imageBlob = await downloadFile(`/cup.png`);
+                // Добавляем метод save_image в IndexedDBService или используем напрямую
+                const db = await initDB();
+                const tx = db.transaction("images", "readwrite");
+                const store = tx.objectStore("images");
+                await store.put({ id: "cup", blob: imageBlob });
+                await tx.done;
             }
 
             toast.success("Загрузка завершена.");
@@ -251,16 +276,19 @@ export const DownloadTrainingMedia = (props: { training: ITraining, inAscet?: bo
 
                 if (phrases) {
                     for (const phrase of phrases) {
-                        const audioExists = await isFileExists("sounds", phrase.audio_id);
-                        if (!audioExists) return false;
+                        if (phrase.audio_id) {
+                            const audioExists = await isFileExists("sounds", phrase.audio_id);
+                            if (!audioExists) return false;
+                        }
                     }
                 }
 
                 const alreadyExists1 = await isFileExists("sounds", "listen-phrase");
                 const alreadyExists2 = await isFileExists("sounds", "one-more-time");
                 const alreadyExists3 = await isFileExists("sounds", "remember-this-phrase");
+                const cupImageExists = await isFileExists("images", "cup");
 
-                return !(!alreadyExists1 || !alreadyExists2 || !alreadyExists3);
+                return !(!alreadyExists1 || !alreadyExists2 || !alreadyExists3 || !cupImageExists);
             };
 
             const checkFiles = async () => {

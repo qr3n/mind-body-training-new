@@ -2,6 +2,7 @@ import { atom } from "jotai";
 import { atomFamily } from "jotai/utils";
 
 export const watchTrainingVideosBlobs = atom<Record<string, string>>({})
+export const watchTrainingImagesBlobs = atomFamily((_: string) => atom(''))
 export const watchTrainingVideosBlobsNew = atomFamily((_: string) => atom(''));
 export const watchTrainingAudiosBlobs = atom<Record<string, string>>({})
 export const watchTrainingSpeakerVolume = atom(0)
@@ -16,6 +17,7 @@ export const watchedVideosAtom = atom<string[]>([])
 export const watchTrainingRepsQty = atom<number>(1)
 export const watchTrainingLapsQty = atom<number>(1)
 export const watchTrainingAscetSeconds = atom<number | undefined>(undefined)
+
 export const watchTrainingAscetPhraseSounds = atom<string[]>()
 
 export const resetAllBlockIndex = atom(null, (get, set) => {
@@ -34,3 +36,11 @@ export const setWatchTrainingVideosBlobsNew = atom(
     }
 );
 
+
+// Создаем атом для установки значения по id
+export const setWatchTrainingImage = atom(
+    null,
+    (get, set, { id, value }: { id: string; value: string }) => {
+        set(watchTrainingImagesBlobs(id), value);
+    }
+);

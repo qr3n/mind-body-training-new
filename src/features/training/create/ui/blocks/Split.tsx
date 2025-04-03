@@ -1,7 +1,7 @@
 import { DraggableChildProps, DraggableList } from "@/shared/ui/draggable-list";
 import { useAtom } from "jotai/index";
 import {
-    childBlocksAtomFamily, repsQtyCountAtomFamily,
+    childBlocksAtomFamily, createTrainingShowBlockPreview, createTrainingShowBlockQty, repsQtyCountAtomFamily,
 } from "@/features/training/create/model";
 import { Block } from "@/features/training/create/ui/templates/Block";
 import React from "react";
@@ -9,10 +9,13 @@ import { CreateTrainingTemplates } from "@/features/training/create/ui/templates
 import { ChooseSecondLevelBlockForRender } from "@/features/training/create/ui/blocks/ChooseBlockForRender";
 import { Button } from "@/shared/shadcn/ui/button";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa6";
+import { AnimatedCheckbox } from "@/shared/ui/animated-checkbox";
 
 export const Split = (props: DraggableChildProps) => {
     const [childIds, setChildIds] = useAtom(childBlocksAtomFamily(props.id));
     const [count, setCount] = useAtom(repsQtyCountAtomFamily(props.id))
+    const [showBlockPreview, setShowBlockPreview] = useAtom(createTrainingShowBlockPreview(props.id))
+    const [showBlockQty, setShowBlockQty] = useAtom(createTrainingShowBlockQty(props.id))
 
     return (
         <Block
@@ -41,6 +44,16 @@ export const Split = (props: DraggableChildProps) => {
                             <FaChevronDown className='text-blue-500 w-4 h-4'/>
                         </Button>
                     </div>
+                </div>
+
+                <div className='flex ml-12 items-center justify-center gap-2'>
+                    <h1>Выводить слайд &#34;Кол-во подходов&#34;</h1>
+                    <AnimatedCheckbox checked={showBlockQty} onChangeValue={() => setShowBlockQty(prev => !prev)}/>
+                </div>
+
+                <div className='flex ml-12 items-center justify-center gap-2'>
+                    <h1>Выводить слайд &#34;Сплит&#34;</h1>
+                    <AnimatedCheckbox checked={showBlockPreview} onChangeValue={() => setShowBlockPreview(prev => !prev)}/>
                 </div>
             </div>
 

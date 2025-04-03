@@ -112,6 +112,8 @@ export interface ITrainingBlockWithContent {
     approachNumber?: number,
     exerciseNumber?: number,
     exercisesInApproachCount?: number,
+    showBlockPreview?: boolean,
+    showQty?: boolean,
     setsDurations?: ExerciseDurations[]
 }
 

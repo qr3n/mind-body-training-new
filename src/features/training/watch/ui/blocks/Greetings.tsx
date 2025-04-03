@@ -64,6 +64,7 @@ export const Greetings = (props: IWatchTrainingBlockProps) => {
                 <Image
                     draggable={false}
                     priority={true}
+                    loading={'eager'}
                     src={`${API_URL}/content/library/image/${props.block.imageName}`}
                     className='object-contain max-w-[80vw] max-h-[65vh]'
                     width={400}

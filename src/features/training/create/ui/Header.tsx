@@ -14,7 +14,7 @@ import {
 import { useAtom } from "jotai/index";
 import {
     assembleTrainingBlocksAtom, blockSoundsAtomFamily, cycleTrainingMusic,
-    isSomethingUploadingAtom, newCreateTrainingAddBlocksMode,
+    isSomethingUploadingAtom, newCreateTrainingAddBlocksMode, totalSlideDurationAtom,
     trainingEquipment
 } from "@/features/training/create/model";
 import { useForm } from "react-hook-form";
@@ -70,7 +70,18 @@ interface IProps {
     initialSpeakerVolume?: number
 }
 
+function formatSeconds(seconds: number) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+
+    // Добавляем ведущий ноль, если секунд меньше 10
+    const formattedSeconds = remainingSeconds < 10 ? `0${remainingSeconds}` : remainingSeconds;
+
+    return `${minutes}:${formattedSeconds}`;
+}
+
 export const Header = (props: IProps) => {
+    const [totalDuration] = useAtom(totalSlideDurationAtom)
     const router = useRouter()
     const [cycle, setCycle] = useAtom(cycleTrainingMusic)
     const isFetching = useAtomValue(isSomethingUploadingAtom);
@@ -167,6 +178,7 @@ export const Header = (props: IProps) => {
                             <h1 className='text-xs    '>Новый режим</h1>
                             <Switch defaultChecked onCheckedChange={v => setNewMode(v)}/>
                         </div>
+                        <div className='text-white font-semibold'>{formatSeconds(Number(totalDuration) || 0)}</div>
                         <Button
                             disabled={isPending || isFetching}
                             type='button'

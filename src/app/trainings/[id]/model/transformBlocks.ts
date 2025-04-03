@@ -158,14 +158,17 @@ export function transformTrainingBlocks(
     if (greetingsBlock) result.push(greetingsBlock);
 
     if (circleBlock) {
-        const lapsQtyBlock: ITrainingBlockWithContent = {
-            type: 'lapsQty',
-            videos: [],
-            audios: circleBlock.lapsQtyAudios || [],
-            circlesTimes: circleBlock.content?.map(c => calculateAllTime(c.content || [])) ?? [],
-            allTime: allTimeValue,
-        };
-        result.push(lapsQtyBlock);
+        if (circleBlock.showQty) {
+            const lapsQtyBlock: ITrainingBlockWithContent = {
+                type: 'lapsQty',
+                videos: [],
+                audios: circleBlock.lapsQtyAudios || [],
+                circlesTimes: circleBlock.content?.map(c => calculateAllTime(c.content || [])) ?? [],
+                allTime: allTimeValue,
+            };
+
+            result.push(lapsQtyBlock)
+        }
     }
 
     if (splitBlock) {
@@ -240,16 +243,19 @@ export function transformTrainingBlocks(
             })
         })
 
-        const repsQtyBlock: ITrainingBlockWithContent = {
-            type: 'repsQty',
-            videos: [],
-            audios: splitBlock.repsQtyAudios || [],
-            circlesTimes: splitBlock.content?.map(c => calculateAllTime(c.content || [])) ?? [],
-            allTime: allTimeValue,
-            setsDurations: duration,
-            repsQtyCount: splitBlock.repsQtyCount || 3
-        };
-        result.push(repsQtyBlock);
+        if (splitBlock.showQty) {
+            const repsQtyBlock: ITrainingBlockWithContent = {
+                type: 'repsQty',
+                videos: [],
+                audios: splitBlock.repsQtyAudios || [],
+                circlesTimes: splitBlock.content?.map(c => calculateAllTime(c.content || [])) ?? [],
+                allTime: allTimeValue,
+                setsDurations: duration,
+                repsQtyCount: splitBlock.repsQtyCount || 3
+            };
+
+            result.push(repsQtyBlock)
+        }
     }
 
     result.push(...original);

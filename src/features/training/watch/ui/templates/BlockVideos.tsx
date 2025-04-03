@@ -545,7 +545,7 @@ export const BlockVideos = (props: IProps) => {
                                 </div>
 
                                 <div
-                                    className='px-2 font-medium [font-size:_clamp(0.1em,1.6dvh,1em)] sm:[font-size:_clamp(0.2em,2dvh,1em)] -mt-4 rounded-lg text-zinc-600/90 py-1 absolute left-1/2 -translate-x-1/2 bg-zinc-200'>
+                                    className='px-2 font-medium [font-size:_clamp(0.1em,1.6dvh,1em)] sm:[font-size:_clamp(0.2em,2dvh,1em)] -mt-4 rounded-lg text-zinc-600/90 py-1  bg-zinc-200'>
                                     {exerciseTypesMap[currentVideo?.exercise_type || 'стд']}
                                 </div>
                                 <div>
@@ -600,7 +600,7 @@ export const BlockVideos = (props: IProps) => {
                 <PopoverTrigger asChild>
                     <motion.div initial={{scale: 0}} animate={{scale: 1}} exit={{scale: 0}}>
                         <Button
-                            className='fixed bottom-24 right-12 sm:left-[75%] md:left-[65%] w-[clamp(2rem,4vh,3rem)] h-[clamp(2rem,4vh,3rem)] p-0 shadow-md  border border-[#999] hover:border-[#333] bg-transparent hover:bg-[#eee]'
+                            className='fixed bottom-16 right-12 sm:left-[75%] md:left-[65%] w-[clamp(2rem,4vh,3rem)] h-[clamp(2rem,4vh,3rem)] p-0 shadow-md  border border-[#999] hover:border-[#333] bg-transparent hover:bg-[#eee]'
                         >
                             <IoMdVolumeHigh
                                 className='text-[#333232] w-[clamp(1rem,5vw,2rem)] h-[clamp(1rem,5vh,2rem)]'/>

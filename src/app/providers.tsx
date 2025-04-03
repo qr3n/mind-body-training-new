@@ -6,13 +6,16 @@ import {
 } from '@tanstack/react-query'
 import { Provider } from "jotai/react";
 import { queryClient } from "@/shared/api/api";
+import { OrientationProvider } from "@/app/OrientationProvider";
 
 export const Providers = (props: PropsWithChildren) => {
     return (
-        <QueryClientProvider client={queryClient}>
-            <Provider>
-                {props.children}
-            </Provider>
-        </QueryClientProvider>
+        <OrientationProvider>
+            <QueryClientProvider client={queryClient}>
+                <Provider>
+                    {props.children}
+                </Provider>
+            </QueryClientProvider>
+        </OrientationProvider>
     )
 }

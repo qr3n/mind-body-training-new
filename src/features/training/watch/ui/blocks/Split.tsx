@@ -181,35 +181,45 @@ function renderFlatArray(transformedBlocks: TransformedBlocks, handleNext: () =>
     const array: ITrainingAudio[] = Array.from({length: 7}, (_, i) => ({type: 'audio', id: `СУ${i + 1}`}));
     const array2: ITrainingAudio[] = Array.from({length: 21}, (_, i) => ({type: 'audio', id: `ПОДХ${i + 1}`}));
 
-    return [
-        <WatchTrainingTemplate.BlockText
-            handleNext={handleNext}
-            handlePrev={handlePrev}
-            icon={<SplitImg/>}
-            key={0} text='Сплит тренировка'>
-            <WatchTrainingTemplate.BlockSounds
-                nextAfterComplete
+    // Create an array to hold all blocks
+    const blocks: React.ReactNode[] = [];
+
+    // Only add the Split training block if showBlockPreview is true
+    if (block.showBlockPreview) {
+        blocks.push(
+            <WatchTrainingTemplate.BlockText
                 handleNext={handleNext}
-                isPlaying
-                block={block}
-            />
-            <div className='flex -mr-6 text-white items-center gap-8 justify-between'>
-                <div className='text-center'>
-                    <h1 className='font-semibold [font-size:_clamp(5px,7dvh,48px)]'>{transformedBlocks.maxApproachesCount}</h1>
-                    <h1 className='-mt-2 [font-size:_clamp(2px,3dvh,16px)]'>{getCircleLabel(transformedBlocks.maxApproachesCount)}</h1>
+                handlePrev={handlePrev}
+                icon={<SplitImg/>}
+                key={0} text='Сплит тренировка'>
+                <WatchTrainingTemplate.BlockSounds
+                    nextAfterComplete
+                    handleNext={handleNext}
+                    isPlaying
+                    block={block}
+                />
+                <div className='flex -mr-6 text-white items-center gap-8 justify-between'>
+                    <div className='text-center'>
+                        <h1 className='font-semibold [font-size:_clamp(5px,7dvh,48px)]'>{transformedBlocks.maxApproachesCount}</h1>
+                        <h1 className='-mt-2 [font-size:_clamp(2px,3dvh,16px)]'>{getCircleLabel(transformedBlocks.maxApproachesCount)}</h1>
+                    </div>
+                    <div>
+                        <h1 className='font-medium [font-size:_clamp(2px,3.5dvh,24px)]'>X</h1>
+                    </div>
+                    <div className='text-center'>
+                        <h1 className='font-semibold [font-size:_clamp(5px,7dvh,48px)]'>{transformedBlocks.exerciseCount}</h1>
+                        <h1 className='-mt-2 [font-size:_clamp(2px,3dvh,16px)]'>{getExerciseLabel(transformedBlocks.exerciseCount)}</h1>
+                    </div>
                 </div>
-                <div>
-                    <h1 className='font-medium [font-size:_clamp(2px,3.5dvh,24px)]'>X</h1>
-                </div>
-                <div className='text-center'>
-                    <h1 className='font-semibold [font-size:_clamp(5px,7dvh,48px)]'>{transformedBlocks.exerciseCount}</h1>
-                    <h1 className='-mt-2 [font-size:_clamp(2px,3dvh,16px)]'>{getExerciseLabel(transformedBlocks.exerciseCount)}</h1>
-                </div>
-            </div>
-        </WatchTrainingTemplate.BlockText>,
-        ...transformedBlocks.flatArray.map((item: FlatArrayItem, index: number) => {
-            if (item.type === 'exerciseHeader') {
-                return <WatchTrainingTemplate.BlockText
+            </WatchTrainingTemplate.BlockText>
+        );
+    }
+
+    // Add all the other blocks
+    transformedBlocks.flatArray.forEach((item: FlatArrayItem, index: number) => {
+        if (item.type === 'exerciseHeader') {
+            blocks.push(
+                <WatchTrainingTemplate.BlockText
                     handleNext={handleNext}
                     handlePrev={handlePrev}
                     icon={<SplitImg/>}
@@ -225,9 +235,11 @@ function renderFlatArray(transformedBlocks: TransformedBlocks, handleNext: () =>
                             videos: [],
                             audios: [array[item.exerciseNumber - 1]]
                         }}/>
-                </WatchTrainingTemplate.BlockText>;
-            } else if (item.type === 'approachHeader') {
-                return <WatchTrainingTemplate.BlockText
+                </WatchTrainingTemplate.BlockText>
+            );
+        } else if (item.type === 'approachHeader') {
+            blocks.push(
+                <WatchTrainingTemplate.BlockText
                     handleNext={handleNext}
                     handlePrev={handlePrev}
                     icon={<SplitImg/>}
@@ -243,9 +255,11 @@ function renderFlatArray(transformedBlocks: TransformedBlocks, handleNext: () =>
                             videos: [],
                             audios: [array2[item.approachNumber - 1]]
                         }}/>
-                </WatchTrainingTemplate.BlockText>;
-            } else if (item.type === 'rest') {
-                return <WatchTrainingTemplate.BlockVideos
+                </WatchTrainingTemplate.BlockText>
+            );
+        } else if (item.type === 'rest') {
+            blocks.push(
+                <WatchTrainingTemplate.BlockVideos
                     renderExerciseNumber
                     isSplit
                     circleNumber={item.approachNumber}
@@ -257,9 +271,11 @@ function renderFlatArray(transformedBlocks: TransformedBlocks, handleNext: () =>
                     type={'rest'}
                     handleNext={handleNext}
                     handlePrev={handlePrev}
-                />;
-            } else if (item.type === 'exercise') {
-                return <WatchTrainingTemplate.BlockVideos
+                />
+            );
+        } else if (item.type === 'exercise') {
+            blocks.push(
+                <WatchTrainingTemplate.BlockVideos
                     renderExerciseNumber
                     isSplit
                     circleNumber={item.approachNumber}
@@ -271,13 +287,20 @@ function renderFlatArray(transformedBlocks: TransformedBlocks, handleNext: () =>
                     type={'exercise'}
                     handleNext={handleNext}
                     handlePrev={handlePrev}
-                />;
-            } else if (item.type === 'phrase') {
-                return  <Phrase key={index} prevStep={handlePrev} block={(item)} onComplete={handleNext} step={0} />
-            } else {
-                return <Phrase key={index} prevStep={handlePrev} block={(item)} onComplete={handleNext} step={0} />;
-            }
-        })];
+                />
+            );
+        } else if (item.type === 'phrase') {
+            blocks.push(
+                <Phrase key={index} prevStep={handlePrev} block={(item)} onComplete={handleNext} step={0} />
+            );
+        } else {
+            blocks.push(
+                <Phrase key={index} prevStep={handlePrev} block={(item)} onComplete={handleNext} step={0} />
+            );
+        }
+    });
+
+    return blocks;
 }
 
 function adjustSplits(data: ITrainingBlockWithContent[], useSplitCount: number) {

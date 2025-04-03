@@ -2,7 +2,8 @@ import { atom } from "jotai";
 import {
     IAnswer,
     ITraining,
-    ITrainingAudio, ITrainingBlockWithContent,
+    ITrainingAudio,
+    ITrainingBlockWithContent,
     ITrainingPause,
     ITrainingVideo,
     TTrainingBlock
@@ -11,6 +12,8 @@ import { IAvailableVideo } from "@/shared/api/services/video";
 import { atomFamily } from 'jotai/utils'
 import { IAvailableAudio, IAvailablePhrase } from "@/shared/api/services/audio";
 
+export const createTrainingShowBlockPreview = atomFamily((_: string) => atom(false))
+export const createTrainingShowBlockQty = atomFamily((_: string) => atom(false))
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const createTrainingFirstLevelBlocksAtomFamily = atomFamily((_: string) => atom<TTrainingBlock | null>(null));
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -185,10 +188,10 @@ export const removeVideoFromBlock = atom(
         set(blockVideosAtomFamily(blockId), updatedVideos);
 
         // Получаем все блоки и ищем все видео для этих блоков
-        const allBlockIds = get(allBlocksIds);
+        const allBlockIdsVar = get(allBlocksIds);
         const usedEquipments: Set<string> = new Set();
 
-        allBlockIds.forEach((id) => {
+        allBlockIdsVar.forEach((id) => {
             const blockVideos = get(blockVideosAtomFamily(id));
             blockVideos.forEach((video) => {
                 if (video.id !== videoId) {
@@ -287,6 +290,8 @@ export const removeCreateTrainingBlock = atom(
         set(trainingEquipment, (currentEquipment) =>
             currentEquipment.filter((equipment) => usedEquipment.has(equipment))
         );
+
+        set(allBlocksIds, get(allBlocksIds).filter(id => id !== blockId))
     }
 );
 
@@ -407,6 +412,8 @@ export const assembleTrainingBlocksAtom = atom((get) => {
         const repsSounds = get(blockRepsQtySoundsAtomFamily(blockId))
         const lapsSounds = get(blockLapsQtySoundsAtomFamily(blockId))
         const repsCount = get(repsQtyCountAtomFamily(blockId))
+        const showBlockPreview = get(createTrainingShowBlockPreview(blockId))
+        const showBlockQty = get(createTrainingShowBlockQty(blockId))
 
         return {
             ...block,
@@ -426,7 +433,9 @@ export const assembleTrainingBlocksAtom = atom((get) => {
             useVideoAudio,
             repsQtyAudios: repsSounds,
             lapsQtyAudios: lapsSounds,
-            repsQtyCount: repsCount
+            repsQtyCount: repsCount,
+            showBlockPreview: showBlockPreview,
+            showQty: showBlockQty,
         };
     };
 
@@ -491,6 +500,8 @@ export const resetAllAtomsAtom = atom(null, (get, set) => {
         set(childBlocksAtomFamily(blockId), []);
         set(blockRepsQtySoundsAtomFamily(blockId), [])
         set(blockLapsQtySoundsAtomFamily(blockId), [])
+        set(createTrainingShowBlockQty(blockId), false)
+        set(createTrainingShowBlockPreview(blockId), false)
     });
 
     set(cycleTrainingMusic, false)
@@ -509,7 +520,7 @@ export const initializeBlocksAtom = atom(
         set(blockSoundsAtomFamily('root.audios'), training.audio)
 
         flatBlocks.forEach((block) => {
-            const { id, parentId, cycleVideo, inputResults, allTime, circlesTimes, ascetAudios, fromTimePercent, toTimePercent, approachNumber, repsQtyCount, lapsQtyAudios, repsQtyAudios, useVideoAudio, level, videos, ending, audios, title, description, question, imageName, answers, startIn, slideDuration, ...blockData } = block;
+            const { id, parentId, cycleVideo, inputResults, allTime, circlesTimes, showBlockPreview, showQty, ascetAudios, fromTimePercent, toTimePercent, approachNumber, repsQtyCount, lapsQtyAudios, repsQtyAudios, useVideoAudio, level, videos, ending, audios, title, description, question, imageName, answers, startIn, slideDuration, ...blockData } = block;
             
             set(allBlocksIds, [...get(allBlocksIds), id]);
 
@@ -543,9 +554,34 @@ export const initializeBlocksAtom = atom(
             set(blockLapsQtySoundsAtomFamily(id), lapsQtyAudios || [])
             set(blockRepsQtySoundsAtomFamily(id), repsQtyAudios || [])
             set(repsQtyCountAtomFamily(id), repsQtyCount || 3)
+            set(createTrainingShowBlockQty(id), !!showQty)
+            set(createTrainingShowBlockPreview(id), !!showBlockPreview)
 
             if (startIn) set(startInAtomFamily(id), startIn)
             if (slideDuration) set(slideDurationAtomFamily(id), slideDuration)
         });
     }
 );
+
+export const totalSlideDurationAtom = atom((get) => {
+    const blockIds = get(allBlocksIds);
+
+    // Получаем длительность слайда для каждого блока и суммируем их только для блоков типа rest или exercise
+    return blockIds.reduce((sum, blockId) => {
+        // Проверяем блок на каждом уровне, пока не найдем
+        const firstLevelBlock = get(createTrainingFirstLevelBlocksAtomFamily(blockId));
+        const secondLevelBlock = get(createTrainingSecondLevelBlocksAtomFamily(blockId));
+        const thirdLevelBlock = get(createTrainingThirdLevelBlocksAtomFamily(blockId));
+
+        // Берем первый ненулевой блок
+        const block = firstLevelBlock || secondLevelBlock || thirdLevelBlock;
+
+        // Если блок существует и его тип - rest или exercise, добавляем его продолжительность
+        if (block && (block.type === 'rest' || block.type === 'exercise')) {
+            const slideDuration = get(slideDurationAtomFamily(blockId));
+            return sum + slideDuration;
+        }
+
+        return sum;
+    }, 0);
+});

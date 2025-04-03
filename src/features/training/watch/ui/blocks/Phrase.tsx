@@ -17,9 +17,8 @@ export const Phrase = (props: IWatchTrainingBlockProps) => {
     const setIsMusicPlaying = useSetAtom(watchTrainingMusicPlaying)
     const [reset, setReset] = useState(Date.now().toString())
 
-    console.log(props.block.audios, 'PHRASE AUDIOS')
-
     useEffect(() => {
+        console.log(props.block)
         setIsMusicPlaying(false)
     }, []);
 
@@ -100,10 +99,7 @@ export const Phrase = (props: IWatchTrainingBlockProps) => {
                     }} className='py-6' >
                         <IoArrowBack className='text-white'/>
                     </Button>
-                    <Button
-                        onClick={() => setReset(Date.now().toString())}
-                        className='fixed left-1/2 bg-transparent shadow-none hover:bg-transparent bottom-[clamp(1rem,8vh,4rem)] -translate-x-1/2  rounded-full w-[clamp(2rem,6vh,2.8rem)] h-[clamp(2rem,6vh,2.8rem)]'
-                    >
+                    <Button onClick={() => setReset(Date.now().toString())} className='py-6 bg-transparent shadow-none hover:bg-transparent'>
                         <FaRepeat className='text-[#333232]'/>
                     </Button>
                     <Button className='w-full sm:w-[400px] py-6' onClick={() => {
